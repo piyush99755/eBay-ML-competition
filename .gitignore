@@ -1,0 +1,25 @@
+# Data exclusion
+data/
+*.tsv
+*.tsv.gz
+*.csv
+*.csv.gz
+*.parquet
+*.jsonl
+*.zip
+*.7z
+*.pkl
+*.pt
+*.bin
+*.ckpt
+
+# Environment & Dependencies
+.venv/
+venv/
+.env
+
+# Python & Jupyter cache
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
