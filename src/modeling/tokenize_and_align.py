@@ -8,7 +8,7 @@ from src.data.label_mapping import create_label_mappings
 MODEL_NAME = "deepset/gbert-base"
 IGNORE_LABEL_ID = -100
 
-def tokenize_and_align_examples(
+def tokenize_and_align_example(
     example: dict,
     tokenizer,
     label2id: dict,
@@ -75,7 +75,7 @@ def main() -> None:
     
     first_example = examples[0]
     
-    encoded = tokenize_and_align_examples(
+    encoded = tokenize_and_align_example(
         first_example,  
         tokenizer,
         label2id,
