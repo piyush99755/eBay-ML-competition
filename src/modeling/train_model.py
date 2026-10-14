@@ -1,5 +1,6 @@
 from pathlib import Path
-
+import random
+import numpy as np
 import torch
 
 from torch.optim import AdamW
@@ -24,6 +25,15 @@ from src.evaluation.evaluate_model import (
     evaluate_model_entities,
 )
 
+from src.evaluation.error_analysis import (
+    analyze_token_confusions,
+    analyze_entity_errors,
+    print_top_confusions,
+    print_entity_error_summary,
+)
+
+
+
 
 TRAIN_BATCH_SIZE = 4
 VAL_BATCH_SIZE = 8
@@ -34,6 +44,17 @@ EPOCHS = 3
 CHECKPOINT_DIR = Path(
     "checkpoints/gbert_baseline_best"
 )
+
+RANDOM_SEED = 42
+
+
+def set_random_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 def evaluate_loss(
@@ -76,22 +97,24 @@ def print_entity_report(
     results: dict,
 ) -> None:
     """
-    Print category and per-aspect entity metrics.
+    Print category-level and per-aspect
+    entity evaluation metrics.
     """
 
     beta = results["beta"]
+    categories = results["categories"]
 
-    print(
-        "\n--- ENTITY-LEVEL VALIDATION ---"
-    )
+    print("\n--- ENTITY-LEVEL VALIDATION ---")
 
-    for category, result in sorted(
-        results["categories"].items()
+    for category, category_result in sorted(
+        categories.items()
     ):
+        category_score = category_result["score"]
+        aspects = category_result["aspects"]
 
         print(
             f"\nCategory {category} score: "
-            f"{result['score']:.6f}"
+            f"{category_score:.6f}"
         )
 
         print(
@@ -100,33 +123,79 @@ def print_entity_report(
         )
 
         sorted_aspects = sorted(
-            result["aspects"].items(),
-            key=lambda item: (
-                item[1]["true_count"]
-            ),
+            aspects.items(),
+            key=lambda item: item[1]["true_count"],
             reverse=True,
         )
 
-        for aspect, metrics in sorted_aspects:
+        for aspect_name, metrics in sorted_aspects:
+            true_count = metrics["true_count"]
+            precision = metrics["precision"]
+            recall = metrics["recall"]
+            f_beta = metrics["f_beta"]
+            weight = metrics["weight"]
 
             print(
-                f"  {aspect}: "
-                f"count={metrics['true_count']} | "
-                f"P={metrics['precision']:.4f} | "
-                f"R={metrics['recall']:.4f} | "
-                f"F{beta}="
-                f"{metrics['f_beta']:.4f} | "
-                f"weight={metrics['weight']:.4f}"
+                f"  {aspect_name}: "
+                f"count={true_count} | "
+                f"P={precision:.4f} | "
+                f"R={recall:.4f} | "
+                f"F{beta}={f_beta:.4f} | "
+                f"weight={weight:.4f}"
             )
+
+    final_score = results["final_score"]
 
     print(
         f"\nLOCAL COMPETITION-STYLE "
         f"F{beta}: "
-        f"{results['final_score']:.6f}"
+        f"{final_score:.6f}"
+    )
+    
+def print_error_analysis(
+    evaluation_output: dict,
+) -> None:
+    """
+    Analyze and print aggregate model errors.
+    """
+
+    true_bio_sequences = evaluation_output[
+        "true_bio_sequences"
+    ]
+
+    predicted_bio_sequences = evaluation_output[
+        "predicted_bio_sequences"
+    ]
+
+    records = evaluation_output["records"]
+
+    confusion_counts = analyze_token_confusions(
+        true_bio_sequences,
+        predicted_bio_sequences,
     )
 
+    aspect_errors = analyze_entity_errors(
+        records
+    )
+
+    print_top_confusions(
+        confusion_counts,
+        top_n=25,
+    )
+
+    print_entity_error_summary(
+        aspect_errors
+    )
 
 def main() -> None:
+    
+    set_random_seed(
+        RANDOM_SEED
+    )
+
+    print(
+        f"Random seed: {RANDOM_SEED}"
+    )
 
     # -------------------------------------------------
     # 1. GPU CHECK
@@ -446,20 +515,26 @@ def main() -> None:
         # ENTITY METRICS
         # ---------------------------------------------
 
-        entity_results = (
-            evaluate_model_entities(
-                model=model,
-                dataset=val_dataset,
-                examples=val_examples,
-                tokenizer=tokenizer,
-                id2label=id2label,
-                device=device,
-                batch_size=VAL_BATCH_SIZE,
-            )
+        evaluation_output = evaluate_model_entities(
+            model=model,
+            dataset=val_dataset,
+            examples=val_examples,
+            tokenizer=tokenizer,
+            id2label=id2label,
+            device=device,
+            batch_size=VAL_BATCH_SIZE,
         )
+
+        entity_results = evaluation_output[
+            "metrics"
+        ]
 
         print_entity_report(
             entity_results
+        )
+        
+        print_error_analysis(
+            evaluation_output
         )
 
         current_f_beta = (

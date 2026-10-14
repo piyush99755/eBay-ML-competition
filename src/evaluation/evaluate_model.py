@@ -49,6 +49,9 @@ def evaluate_model_entities(
     
     records = []
     
+    true_bio_sequences = []
+    predicted_bio_sequences = []
+    
     example_index = 0
     
     with torch.no_grad():
@@ -101,6 +104,14 @@ def evaluate_model_entities(
 
                 true_bio = example["bio_tags"]
                 tokens = example["tokens"]
+                
+                true_bio_sequences.append(
+                    true_bio
+                )
+
+                predicted_bio_sequences.append(
+                    predicted_bio
+                )
 
                 if len(predicted_bio) != len(tokens):
                     raise ValueError(
@@ -137,4 +148,9 @@ def evaluate_model_entities(
         records
     )
 
-    return results
+    return {
+        "metrics": results,
+        "records": records,
+        "true_bio_sequences": true_bio_sequences,
+        "predicted_bio_sequences": predicted_bio_sequences,
+    }
