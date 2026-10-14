@@ -1,5 +1,4 @@
 import torch
-from torchgen import model
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 from src.data.build_examples import (
@@ -12,6 +11,7 @@ from src.modeling.tokenize_and_align import MODEL_NAME
 def build_model(
     label2id: dict,
     id2label: dict,
+    model_name: str = MODEL_NAME,
 ):
     """
         Load pretrained GBERT and attach a token-classification head
@@ -20,11 +20,12 @@ def build_model(
      
     
     model = AutoModelForTokenClassification.from_pretrained(
-            MODEL_NAME,
-                            num_labels=len(label2id),
-                            label2id=label2id,
-                            id2label=id2label,
-                        )
+        model_name,
+        num_labels=len(label2id),
+        label2id=label2id,
+        id2label=id2label,
+    )
+
                             
     return model
     

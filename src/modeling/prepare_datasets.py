@@ -63,13 +63,21 @@ def prepare_split(
             len(encoded["input_ids"]),
         )
         
+        processed_example = {
+            "input_ids": encoded["input_ids"],
+            "attention_mask": encoded[
+                "attention_mask"
+            ],
+            "labels": encoded["labels"],
+        }
+
+        if "token_type_ids" in encoded:
+            processed_example[
+                "token_type_ids"
+            ] = encoded["token_type_ids"]
+
         processed_examples.append(
-            {
-                "input_ids": encoded["input_ids"],
-                "attention_mask": encoded["attention_mask"],
-                "token_type_ids": encoded.get("token_type_ids", []),
-                "labels": encoded["labels"],
-            }
+            processed_example
         )
         
     dataset = Dataset.from_list(processed_examples)
