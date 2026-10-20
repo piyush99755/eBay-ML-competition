@@ -1,8 +1,8 @@
 from pathlib import Path
 import random
 import numpy as np
+import argparse
 import torch
-
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from transformers import (
@@ -45,9 +45,7 @@ XLMR_MODEL_NAME = (
     "FacebookAI/xlm-roberta-base"
 )
 
-CHECKPOINT_DIR = Path(
-    "checkpoints/xlmr_baseline_best"
-)
+
 
 RANDOM_SEED = 42
 
@@ -190,17 +188,37 @@ def print_error_analysis(
     print_entity_error_summary(
         aspect_errors
     )
+    
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+    )
+
+    return parser.parse_args()
 
 def main() -> None:
     
+    args = parse_args()
+
+    random_seed = args.seed
+
     set_random_seed(
-        RANDOM_SEED
+        random_seed
     )
 
     print(
-        f"Random seed: {RANDOM_SEED}"
+        f"Random seed: "
+        f"{random_seed}"
     )
-
+    
+    if random_seed == 42:
+        checkpoint_dir = Path("checkpoints/xlmr_baseline_best")
+    else:
+        checkpoint_dir = Path(f"checkpoints/xlmr_seed_{random_seed}_best")
     # -------------------------------------------------
     # 1. GPU CHECK
     # -------------------------------------------------
@@ -423,7 +441,7 @@ def main() -> None:
     best_f_beta = -1.0
     best_epoch = 0
 
-    CHECKPOINT_DIR.mkdir(
+    checkpoint_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
@@ -561,11 +579,11 @@ def main() -> None:
             best_epoch = epoch + 1
 
             model.save_pretrained(
-                CHECKPOINT_DIR
+                checkpoint_dir
             )
 
             tokenizer.save_pretrained(
-                CHECKPOINT_DIR
+                checkpoint_dir
             )
 
             print(
