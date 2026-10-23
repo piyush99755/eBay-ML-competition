@@ -38,7 +38,10 @@ from transformers import (
     DataCollatorForTokenClassification,
 )
 
-from src.evaluation.entity_metrics import bio_to_entities
+from src.evaluation.entity_metrics import (
+    bio_to_entities,
+    filter_entities_by_category,
+)
 from scripts.validate_submission import (
     OFFICIAL_HEADER,
     validate_submission_file,
@@ -425,10 +428,12 @@ def run_quiz_inference_pipeline() -> dict:
 
             entities = bio_to_entities(tokens, pred_bio)
             non_o_entities = [(asp, val) for asp, val in entities if asp != "O"]
+            # Category-aware post-processing filter (Annexure.pdf compliance)
+            cat_valid_entities = filter_entities_by_category(non_o_entities, cat_id)
 
-            if non_o_entities:
+            if cat_valid_entities:
                 titles_with_entities += 1
-                for aspect_name, aspect_val in non_o_entities:
+                for aspect_name, aspect_val in cat_valid_entities:
                     f.write(f"{rec_id}\t{cat_id}\t{aspect_name}\t{aspect_val}\n")
                     rows_written += 1
                     aspect_counts[aspect_name] = aspect_counts.get(aspect_name, 0) + 1

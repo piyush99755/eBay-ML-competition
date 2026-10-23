@@ -100,6 +100,28 @@ def bio_to_entities(
     return entities
 
 
+def filter_entities_by_category(
+    entities: list[tuple[str, str]],
+    category: int,
+    allowed_cat1: set[str] = None,
+    allowed_cat2: set[str] = None,
+) -> list[tuple[str, str]]:
+    """
+    Filter extracted entities to only those allowed for the specific listing category.
+    Category 1 allows 23 aspects; Category 2 allows 20 aspects (per Annexure.pdf pp. 11-14).
+    """
+    if allowed_cat1 is None or allowed_cat2 is None:
+        from scripts.validate_submission import (
+            OFFICIAL_ASPECTS_CAT1,
+            OFFICIAL_ASPECTS_CAT2,
+        )
+        allowed_cat1 = OFFICIAL_ASPECTS_CAT1
+        allowed_cat2 = OFFICIAL_ASPECTS_CAT2
+
+    allowed = allowed_cat1 if category == 1 else allowed_cat2
+    return [(asp, val) for asp, val in entities if asp in allowed]
+
+
 def count_matches(
     predicted_entities: list[tuple[str, str]],
     true_entities: list[tuple[str, str]],
