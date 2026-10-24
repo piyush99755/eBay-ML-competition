@@ -20,6 +20,8 @@ Safety & Preflight:
 import argparse
 import random
 import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -40,6 +42,7 @@ from src.data.label_mapping import create_label_mappings
 from src.modeling.prepare_datasets import prepare_split
 
 MIN_REQUIRED_FREE_DISK_GB = 10.0
+MIN_SINGLE_MODEL_FREE_DISK_GB = 3.5
 
 MODEL_CONFIGS: Dict[str, dict] = {
     "gbert_seed42": {
@@ -122,13 +125,32 @@ def train_single_fulldata_model(
     print(f"  Target Save Dir:  {checkpoint_dir}")
     print(f"  Training Titles:  {len(examples)} (100% full data, no split)")
 
-    # 1. Preflight disk space check
-    is_space_ok, free_gb = check_disk_space(MIN_REQUIRED_FREE_DISK_GB)
-    print(f"  Current Free Disk: {free_gb:.2f} GB (Required >= {MIN_REQUIRED_FREE_DISK_GB:.1f} GB)")
+    # Check if model has already been trained and verified
+    weights_file = checkpoint_dir / "model.safetensors"
+    config_file = checkpoint_dir / "config.json"
+    if weights_file.exists() and config_file.exists() and weights_file.stat().st_size > 100_000_000:
+        cp_size_mb = sum(f.stat().st_size for f in checkpoint_dir.iterdir() if f.is_file()) / (1024 ** 2)
+        _, current_free = check_disk_space()
+        print(f"\n[SKIP] Verified checkpoint already exists at {checkpoint_dir} ({cp_size_mb:.1f} MB). Skipping training.")
+        return {
+            "model_id": model_id,
+            "checkpoint_dir": str(checkpoint_dir),
+            "epochs_completed": epochs,
+            "final_loss": None,
+            "checkpoint_size_mb": round(cp_size_mb, 1),
+            "peak_vram_mb": 0.0,
+            "post_free_gb": round(current_free, 2),
+            "runtime_seconds": 0.0,
+            "skipped": True,
+        }
+
+    # 1. Preflight disk space check before training this model
+    is_space_ok, free_gb = check_disk_space(MIN_SINGLE_MODEL_FREE_DISK_GB)
+    print(f"  Current Free Disk: {free_gb:.2f} GB (Required >= {MIN_SINGLE_MODEL_FREE_DISK_GB:.1f} GB)")
     if not is_space_ok:
         raise RuntimeError(
             f"Insufficient disk space for {model_id}: {free_gb:.2f} GB available, "
-            f"required >= {MIN_REQUIRED_FREE_DISK_GB:.1f} GB! Stopping to prevent disk exhaustion."
+            f"required >= {MIN_SINGLE_MODEL_FREE_DISK_GB:.1f} GB! Stopping to prevent disk exhaustion."
         )
 
     set_random_seed(seed)
@@ -247,13 +269,43 @@ def run_fulldata_pipeline(models_to_run: Optional[List[str]] = None) -> List[dic
     print("PHASE 22: FULL-DATA CHAMPION TRAINING PIPELINE")
     print("==================================================")
 
-    # Preflight Check
-    is_space_ok, free_gb = check_disk_space(MIN_REQUIRED_FREE_DISK_GB)
-    print(f"Preflight Disk Check: {free_gb:.2f} GB free.")
+    if models_to_run is None:
+        models_to_run = ["gbert_seed42", "xlmr_seed42", "xlmr_seed7", "xlmr_seed21"]
+
+    # If multiple models are requested (e.g. --all), run each sequentially in an isolated
+    # sub-process. This ensures OS working sets and GPU paging commitments on Windows
+    # are completely reclaimed after each model finishes.
+    if len(models_to_run) > 1:
+        # Preflight Check for entire pipeline
+        is_space_ok, free_gb = check_disk_space(MIN_REQUIRED_FREE_DISK_GB)
+        print(f"Preflight Disk Check (Pipeline Launch): {free_gb:.2f} GB free.")
+        if not is_space_ok:
+            raise RuntimeError(
+                f"Preflight FAIL: Disk space {free_gb:.2f} GB is below required {MIN_REQUIRED_FREE_DISK_GB:.1f} GB! "
+                f"Full-data training cannot proceed without safe cleanup."
+            )
+
+        print(f"Executing sequential isolated training for {len(models_to_run)} models: {models_to_run}")
+        for idx, model_id in enumerate(models_to_run, 1):
+            print(f"\n[{idx}/{len(models_to_run)}] Spawning worker process for {model_id}...")
+            cmd = [sys.executable, "-u", "-m", "src.modeling.train_fulldata_champion", "--model-id", model_id]
+            ret = subprocess.run(cmd)
+            if ret.returncode != 0:
+                raise RuntimeError(f"Training worker process for {model_id} failed with exit code {ret.returncode}!")
+
+        print("\n==================================================")
+        print("ALL REQUESTED FULL-DATA MODELS COMPLETED SUCCESSFULLY")
+        print("==================================================")
+        return []
+
+    # Single-model worker execution:
+    model_id = models_to_run[0]
+    is_space_ok, free_gb = check_disk_space(MIN_SINGLE_MODEL_FREE_DISK_GB)
+    print(f"Preflight Disk Check ({model_id}): {free_gb:.2f} GB free.")
     if not is_space_ok:
         raise RuntimeError(
-            f"Preflight FAIL: Disk space {free_gb:.2f} GB is below required {MIN_REQUIRED_FREE_DISK_GB:.1f} GB! "
-            f"Full-data training cannot proceed without safe cleanup."
+            f"Preflight FAIL: Disk space {free_gb:.2f} GB is below required {MIN_SINGLE_MODEL_FREE_DISK_GB:.1f} GB! "
+            f"Training {model_id} stopped to prevent disk exhaustion."
         )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -275,24 +327,14 @@ def run_fulldata_pipeline(models_to_run: Optional[List[str]] = None) -> List[dic
     label2id, id2label = create_label_mappings(examples)
     print(f"BIO Label Space: {len(label2id)} classes (shared across all models).")
 
-    if models_to_run is None:
-        models_to_run = ["gbert_seed42", "xlmr_seed42", "xlmr_seed7", "xlmr_seed21"]
-
-    results = []
-    for model_id in models_to_run:
-        res = train_single_fulldata_model(
-            model_id=model_id,
-            examples=examples,
-            label2id=label2id,
-            id2label=id2label,
-            device=device,
-        )
-        results.append(res)
-
-    print("\n==================================================")
-    print("ALL REQUESTED FULL-DATA MODELS COMPLETED SUCCESSFULLY")
-    print("==================================================")
-    return results
+    res = train_single_fulldata_model(
+        model_id=model_id,
+        examples=examples,
+        label2id=label2id,
+        id2label=id2label,
+        device=device,
+    )
+    return [res]
 
 
 def main() -> None:
