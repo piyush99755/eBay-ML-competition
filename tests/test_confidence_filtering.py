@@ -135,5 +135,58 @@ class TestConfidenceFiltering(unittest.TestCase):
         self.assertEqual(len(pred_base) - len(pred_filt), (tp - tp_f) + (fp - fp_f))
 
 
+
+    def test_unfiltered_equivalence_with_bio_to_entities(self):
+        tokens = ["BOSCH", "Bremsscheiben", "vorne", "links", "VW", "Golf", "7"]
+        bio_tags = [
+            "B-Hersteller", "B-Produktart", "B-Einbauposition", "I-Einbauposition",
+            "B-Kompatible_Fahrzeug_Marke", "B-Kompatibles_Fahrzeug_Modell", "I-Kompatibles_Fahrzeug_Modell",
+        ]
+        probs = [0.95, 0.90, 0.85, 0.80, 0.99, 0.92, 0.91]
+
+        base_ents = bio_to_entities(tokens, bio_tags)
+        conf_ents = bio_to_entities_with_confidence(tokens, bio_tags, probs)
+        unfiltered_ents = [(asp, val) for asp, val, _, _ in conf_ents]
+
+        self.assertEqual(base_ents, unfiltered_ents)
+
+    def test_filter_entities_by_category_direct_4tuples(self):
+        conf_ents = [
+            ("Hersteller", "BOSCH", 0.95, 0.95),
+            ("Bremsscheibenart", "belüftet", 0.99, 0.99),
+            ("Anwendung", "Bremsen", 0.80, 0.80),
+        ]
+
+        # Category 1: Bremsscheibenart allowed, Anwendung forbidden
+        cat1 = filter_entities_by_category(conf_ents, category=1)
+        self.assertEqual(len(cat1), 2)
+        self.assertEqual(cat1[0], ("Hersteller", "BOSCH", 0.95, 0.95))
+        self.assertEqual(cat1[1], ("Bremsscheibenart", "belüftet", 0.99, 0.99))
+
+        # Category 2: Anwendung allowed, Bremsscheibenart forbidden
+        cat2 = filter_entities_by_category(conf_ents, category=2)
+        self.assertEqual(len(cat2), 2)
+        self.assertEqual(cat2[0], ("Hersteller", "BOSCH", 0.95, 0.95))
+        self.assertEqual(cat2[1], ("Anwendung", "Bremsen", 0.80, 0.80))
+
+    def test_min_confidence_filtering_logic(self):
+        conf_ents = [
+            ("Hersteller", "BOSCH", 0.95, 0.95),
+            ("Produktart", "Bremsscheiben", 0.58, 0.58),  # < 0.60
+            ("Einbauposition", "vorne links", 0.75, 0.55), # min 0.55 < 0.60
+            ("Kompatible_Fahrzeug_Marke", "VW", 0.99, 0.99),
+        ]
+
+        # Filter at 0.60
+        kept_060 = [(asp, val) for asp, val, _, min_c in conf_ents if min_c >= 0.60]
+        self.assertEqual(len(kept_060), 2)
+        self.assertEqual(kept_060[0], ("Hersteller", "BOSCH"))
+        self.assertEqual(kept_060[1], ("Kompatible_Fahrzeug_Marke", "VW"))
+
+        # Unfiltered (0.00)
+        kept_unfiltered = [(asp, val) for asp, val, _, min_c in conf_ents if min_c >= 0.0]
+        self.assertEqual(len(kept_unfiltered), 4)
+
+
 if __name__ == "__main__":
     unittest.main()

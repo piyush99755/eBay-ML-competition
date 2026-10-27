@@ -1,5 +1,5 @@
 """
-Phase 24: Configurable Final Test Inference Pipeline.
+Phase 28: Secure Official Quiz Champion for Final Test.
 
 Champion Model Ensemble:
 - GBERT seed 42 (checkpoints/gbert_baseline_best):  0.40
@@ -13,15 +13,19 @@ Inference Semantics:
 - Sequential GPU loading with memory cleanup between models.
 - Ensemble probability averaging (0.40 GBERT + 0.60 3-seed XLM-R).
 - Argmax BIO decoding.
-- Entity reconstruction via bio_to_entities.
+- Entity reconstruction with confidence via bio_to_entities_with_confidence.
 - Method A: Category-aware post-filtering via filter_entities_by_category.
+- Configurable entity-level minimum-token confidence threshold:
+    * Default: --min-confidence 0.60 (Official EvalAI Quiz F0.2 = 0.901245410919943)
+    * Unfiltered: --min-confidence 0.00 (Original baseline Exp 10 Quiz F0.2 = 0.8824567479388766)
 - Strict Annexure.pdf compliance (UTF-8 TSV, official header, csv.QUOTE_NONE, no 'O' tags).
+- No title skipping: every input record is evaluated in sequential order even if 0 entities are produced.
 
 Flexibility for Final Competition Test:
 - Accepts arbitrary record ID ranges (--start-record / --end-record).
 - Accepts an explicit file of record IDs (--record-ids-file).
-- Supports synthetic dry-run mode (--dry-run).
-- Supports reproduction verification against Quiz baseline (--reproduce-quiz).
+- Fast synthetic dry-run verification (--dry-run).
+- Bit-for-bit Quiz reproduction verification against official champions (--reproduce-quiz / --verify-all-quiz).
 """
 
 import argparse
@@ -46,12 +50,13 @@ from transformers import (
 )
 
 # Project root setup
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.evaluation.entity_metrics import (
     bio_to_entities,
+    bio_to_entities_with_confidence,
     filter_entities_by_category,
 )
 from scripts.validate_submission import (
@@ -79,7 +84,13 @@ ENSEMBLE_WEIGHTS = {
     "xlmr_seed21": 0.20,
 }
 
+# Verified Benchmark Constants
+DEFAULT_MIN_CONFIDENCE = 0.60
 KNOWN_QUIZ_BASELINE_SHA256 = "51F880C8A6DEBB4EAF1A83594ECA2D4D2D4A92201D6CB64F9F63EAE913B65115"
+KNOWN_QUIZ_MIN060_SHA256 = "049CF5EF60D88D86C26DEC5A815F8DB820A306989E383843E6A9B3108AD7A7FA"
+REFERENCE_QUIZ_BASELINE_PATH = Path("submissions/submission_quiz_exp10_baseline_corrected.tsv")
+REFERENCE_QUIZ_MIN060_PATH = Path("submissions/submission_quiz_exp26b_min060.tsv")
+
 BATCH_SIZE = 32
 O_LABEL_NAME = "O"
 
@@ -158,6 +169,29 @@ def compute_sha256(file_path: Path) -> str:
         for chunk in iter(lambda: f.read(65536), b""):
             sha256.update(chunk)
     return sha256.hexdigest().upper()
+
+
+def compare_files_byte_for_byte(file1: Path, file2: Path) -> Tuple[bool, str]:
+    """Compare two files byte-for-byte in chunks."""
+    if not file1.exists():
+        return False, f"File 1 does not exist: {file1}"
+    if not file2.exists():
+        return False, f"File 2 does not exist: {file2}"
+    if file1.stat().st_size != file2.stat().st_size:
+        return False, f"Size mismatch: {file1.name} ({file1.stat().st_size} bytes) vs {file2.name} ({file2.stat().st_size} bytes)."
+
+    with open(file1, "rb") as f1, open(file2, "rb") as f2:
+        chunk_idx = 0
+        while True:
+            b1 = f1.read(65536)
+            b2 = f2.read(65536)
+            if b1 != b2:
+                return False, f"Byte mismatch detected at chunk index {chunk_idx}."
+            if not b1:
+                break
+            chunk_idx += 1
+
+    return True, "Files are 100% byte-for-byte identical."
 
 
 def load_candidate_records(
@@ -298,90 +332,133 @@ def run_synthetic_dry_run() -> bool:
     """
     Execute a thorough dry-run using synthetic candidate records.
     Verifies:
-    1. Category 1 vs Category 2 aspect restrictions.
-    2. Preservation of duplicate entities.
-    3. Multi-token entity reconstruction.
-    4. Dropped token 'O' fallback.
-    5. Correct 4-column TSV format with header.
+    1. Unfiltered mode (min_confidence = 0.0).
+    2. Filtered mode (min_confidence = 0.60).
+    3. Category 1 vs Category 2 aspect restrictions.
+    4. Multi-token entity confidence extraction.
+    5. Zero-entity titles handled without skipping or crashing.
     6. Strict compliance through validate_submission_file.
     """
-    print("=" * 60)
-    print("RUNNING SYNTHETIC DRY-RUN VERIFICATION")
-    print("=" * 60)
+    print("=" * 65)
+    print("RUNNING SYNTHETIC DRY-RUN VERIFICATION (PHASE 28)")
+    print("=" * 65)
 
-    # 10 synthetic candidate titles
     synthetic_records = [
         (10001, 1, ["BOSCH", "Bremsscheiben", "vorne", "links", "Passat"]),
         (10002, 1, ["2x", "Bremsscheibe", "belüftet", "300mm", "VW", "Golf", "7"]),
         (10003, 1, ["ATE", "Ceramic", "Bremsbelagsatz", "Hinterachse", "Audi", "A4", "B8"]),
-        (10004, 1, ["Textar", "Bremsscheibenart", "belüftet"]),  # Cat 1 allowed Bremsscheibenart
+        (10004, 1, ["Textar", "Bremsscheibenart", "belüftet"]),
         (10005, 2, ["BOSCH", "Zahnriemensatz", "Wasserpumpe", "Opel", "Astra", "H"]),
-        (10006, 2, ["Continental", "CT1028K1", "Zahnriemen", "136", "Zähne"]),  # Cat 2 allowed Zähnezahl
-        (10007, 2, ["Castrol", "EDGE", "5W-30", "LL", "5", "Liter", "Motoröl"]),  # Cat 2 allowed SAE_Viskosität
+        (10006, 2, ["Continental", "CT1028K1", "Zahnriemen", "136", "Zähne"]),
+        (10007, 2, ["Castrol", "EDGE", "5W-30", "LL", "5", "Liter", "Motoröl"]),
         (10008, 2, ["FEBI", "BILSTEIN", "Kettenspanner", "Steuerkette", "BMW", "E46"]),
         (10009, 2, ["DAYCO", "Keilrippenriemen", "6PK1200", "Länge", "1200mm"]),
-        (10010, 1, ["Test", "No", "Entity", "Title"]),  # zero entity title
+        (10010, 1, ["Test", "No", "Entity", "Title"]),  # zero-entity title
     ]
 
-    # Verify reference label mapping
-    ref_cfg = AutoConfig.from_pretrained(CHAMPION_CHECKPOINTS["gbert_seed42"])
-    id2label = {int(k): v for k, v in ref_cfg.id2label.items()}
-    label2id = {v: k for k, v in id2label.items()}
-    assert len(id2label) == 48
-    assert id2label[47] == "O"
-
-    # Synthetic entity mappings
-    synthetic_predictions = [
-        # 10001
-        [("Hersteller", "BOSCH"), ("Produktart", "Bremsscheiben"), ("Einbauposition", "vorne links"), ("Kompatibles_Fahrzeug_Modell", "Passat")],
-        # 10002: duplicate test ("Bremsscheibe" + "Bremsscheibe" if repeated)
-        [("Menge", "2x"), ("Produktart", "Bremsscheibe"), ("Bremsscheibenart", "belüftet"), ("Bremsscheiben-Aussendurchmesser", "300mm"), ("Kompatible_Fahrzeug_Marke", "VW"), ("Kompatibles_Fahrzeug_Modell", "Golf 7")],
+    # Simulated BIO tags and token probabilities
+    synthetic_simulations = [
+        # 10001: Passat has low confidence (0.45), will be pruned at 0.60
+        (
+            ["B-Hersteller", "B-Produktart", "B-Einbauposition", "I-Einbauposition", "B-Kompatibles_Fahrzeug_Modell"],
+            [0.98, 0.95, 0.90, 0.88, 0.45],
+        ),
+        # 10002
+        (
+            ["B-Menge", "B-Produktart", "B-Bremsscheibenart", "B-Bremsscheiben-Aussendurchmesser", "B-Kompatible_Fahrzeug_Marke", "B-Kompatibles_Fahrzeug_Modell", "I-Kompatibles_Fahrzeug_Modell"],
+            [0.92, 0.99, 0.85, 0.95, 0.99, 0.94, 0.91],
+        ),
         # 10003
-        [("Hersteller", "ATE"), ("Produktlinie", "Ceramic"), ("Produktart", "Bremsbelagsatz"), ("Einbauposition", "Hinterachse"), ("Kompatible_Fahrzeug_Marke", "Audi"), ("Kompatibles_Fahrzeug_Modell", "A4 B8")],
+        (
+            ["B-Hersteller", "B-Produktlinie", "B-Produktart", "B-Einbauposition", "B-Kompatible_Fahrzeug_Marke", "B-Kompatibles_Fahrzeug_Modell", "I-Kompatibles_Fahrzeug_Modell"],
+            [0.97, 0.92, 0.96, 0.91, 0.98, 0.95, 0.90],
+        ),
         # 10004
-        [("Hersteller", "Textar"), ("Bremsscheibenart", "belüftet")],
+        (
+            ["B-Hersteller", "O", "B-Bremsscheibenart"],
+            [0.99, 0.99, 0.93],
+        ),
         # 10005
-        [("Hersteller", "BOSCH"), ("Produktart", "Zahnriemensatz"), ("Im_Lieferumfang_Enthalten", "Wasserpumpe"), ("Kompatible_Fahrzeug_Marke", "Opel"), ("Kompatibles_Fahrzeug_Modell", "Astra H")],
+        (
+            ["B-Hersteller", "B-Produktart", "B-Im_Lieferumfang_Enthalten", "B-Kompatible_Fahrzeug_Marke", "B-Kompatibles_Fahrzeug_Modell", "I-Kompatibles_Fahrzeug_Modell"],
+            [0.99, 0.97, 0.89, 0.99, 0.96, 0.93],
+        ),
         # 10006
-        [("Hersteller", "Continental"), ("Herstellernummer", "CT1028K1"), ("Produktart", "Zahnriemen"), ("Zähnezahl", "136 Zähne")],
-        # 10007
-        [("Hersteller", "Castrol"), ("Produktlinie", "EDGE"), ("SAE_Viskosität", "5W-30"), ("Menge", "5 Liter"), ("Produktart", "Motoröl")],
-        # 10008: duplicate entity test
-        [("Hersteller", "FEBI BILSTEIN"), ("Produktart", "Kettenspanner"), ("Produktart", "Steuerkette"), ("Kompatible_Fahrzeug_Marke", "BMW"), ("Kompatibles_Fahrzeug_Modell", "E46")],
+        (
+            ["B-Hersteller", "B-Herstellernummer", "B-Produktart", "B-Zähnezahl", "I-Zähnezahl"],
+            [0.98, 0.92, 0.97, 0.88, 0.85],
+        ),
+        # 10007: 5W-30 LL multi-token (0.95 and 0.52 min=0.52, pruned at 0.60)
+        (
+            ["B-Hersteller", "B-Produktlinie", "B-SAE_Viskosität", "I-SAE_Viskosität", "B-Menge", "I-Menge", "B-Produktart"],
+            [0.99, 0.91, 0.95, 0.52, 0.90, 0.88, 0.95],
+        ),
+        # 10008
+        (
+            ["B-Hersteller", "I-Hersteller", "B-Produktart", "B-Produktart", "B-Kompatible_Fahrzeug_Marke", "B-Kompatibles_Fahrzeug_Modell"],
+            [0.98, 0.96, 0.92, 0.91, 0.99, 0.94],
+        ),
         # 10009
-        [("Hersteller", "DAYCO"), ("Produktart", "Keilrippenriemen"), ("Herstellernummer", "6PK1200"), ("Länge", "1200mm")],
-        # 10010: zero entities
-        [],
+        (
+            ["B-Hersteller", "B-Produktart", "B-Herstellernummer", "B-Länge", "I-Länge"],
+            [0.99, 0.96, 0.93, 0.89, 0.85],
+        ),
+        # 10010: Zero entities
+        (
+            ["O", "O", "O", "O"],
+            [0.99, 0.99, 0.99, 0.99],
+        ),
     ]
 
-    out_dry_file = Path("submissions/synthetic_dry_run_test.tsv")
-    out_dry_file.parent.mkdir(parents=True, exist_ok=True)
+    out_dry_unfiltered = Path("submissions/synthetic_dry_run_unfiltered.tsv")
+    out_dry_filtered = Path("submissions/synthetic_dry_run_filtered.tsv")
+    out_dry_unfiltered.parent.mkdir(parents=True, exist_ok=True)
 
-    rows_written = 0
-    with open(out_dry_file, "w", encoding="utf-8", newline="\n") as f:
+    # 1. Test Unfiltered (0.0)
+    with open(out_dry_unfiltered, "w", encoding="utf-8", newline="\n") as f:
         f.write("\t".join(OFFICIAL_HEADER) + "\n")
-        for (rec_id, cat_id, _), raw_ents in zip(synthetic_records, synthetic_predictions):
-            filtered = filter_entities_by_category(raw_ents, cat_id)
-            for asp, val in filtered:
+        rows_unfiltered = 0
+        for (rec_id, cat_id, tokens), (bio, probs) in zip(synthetic_records, synthetic_simulations):
+            raw_ents = bio_to_entities_with_confidence(tokens, bio, probs)
+            cat_ents = filter_entities_by_category(raw_ents, cat_id)
+            final_ents = [(asp, val) for asp, val, _, _ in cat_ents]
+            for asp, val in final_ents:
                 f.write(f"{rec_id}\t{cat_id}\t{asp}\t{val}\n")
-                rows_written += 1
+                rows_unfiltered += 1
 
-    # Validate dry-run output
-    is_valid, report = validate_submission_file(
-        out_dry_file,
-        expected_min_record=10001,
-        expected_max_record=10010,
+    valid_unf, report_unf = validate_submission_file(
+        out_dry_unfiltered, expected_min_record=10001, expected_max_record=10010
     )
-    print_validation_report(report)
-    assert is_valid, "Synthetic dry-run validation failed!"
+    assert valid_unf, "Synthetic dry-run (unfiltered) validation failed!"
+    assert rows_unfiltered == 39, f"Expected 39 unfiltered rows, got {rows_unfiltered}"
 
-    assert rows_written == 39, f"Expected 39 rows written, got {rows_written}"
-    assert report["total_data_rows"] == 39, f"Expected 39 data rows in validator, got {report['total_data_rows']}"
+    # 2. Test Filtered (0.60)
+    with open(out_dry_filtered, "w", encoding="utf-8", newline="\n") as f:
+        f.write("\t".join(OFFICIAL_HEADER) + "\n")
+        rows_filtered = 0
+        for (rec_id, cat_id, tokens), (bio, probs) in zip(synthetic_records, synthetic_simulations):
+            raw_ents = bio_to_entities_with_confidence(tokens, bio, probs)
+            cat_ents = filter_entities_by_category(raw_ents, cat_id)
+            final_ents = [(asp, val) for asp, val, _, min_c in cat_ents if min_c >= 0.60]
+            for asp, val in final_ents:
+                f.write(f"{rec_id}\t{cat_id}\t{asp}\t{val}\n")
+                rows_filtered += 1
 
-    # Clean up test file
-    if out_dry_file.exists():
-        out_dry_file.unlink()
+    valid_fil, report_fil = validate_submission_file(
+        out_dry_filtered, expected_min_record=10001, expected_max_record=10010
+    )
+    assert valid_fil, "Synthetic dry-run (filtered) validation failed!"
+    # 2 low-confidence entities pruned (Passat 0.45 and 5W-30 LL min=0.52)
+    assert rows_filtered == 37, f"Expected 37 filtered rows, got {rows_filtered}"
 
+    # Cleanup dry-run test files
+    for p in [out_dry_unfiltered, out_dry_filtered]:
+        if p.exists():
+            p.unlink()
+
+    print(f"  Unfiltered mode emitted: {rows_unfiltered} rows (Valid: YES)")
+    print(f"  Filtered (0.60) emitted: {rows_filtered} rows (Pruned: 2, Valid: YES)")
+    print(f"  Zero-entity title 10010: Handled cleanly without skipping")
     print("\n>>> SYNTHETIC DRY-RUN PASSED 100% <<<")
     return True
 
@@ -392,6 +469,7 @@ def run_champion_inference(
     start_record: Optional[int] = None,
     end_record: Optional[int] = None,
     record_ids_file: Optional[Path] = None,
+    min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     batch_size: int = BATCH_SIZE,
     cache_dir: Optional[Path] = None,
     clean_cache_after: bool = False,
@@ -399,15 +477,18 @@ def run_champion_inference(
     """Execute complete champion ensemble inference on candidate listing titles."""
     overall_start_time = time.time()
     print("==================================================")
-    print("CHAMPION ENSEMBLE INFERENCE PIPELINE (EXP 10)")
+    print("CHAMPION ENSEMBLE INFERENCE PIPELINE (EXP 10 / 28)")
     print("==================================================")
+    print(f"Input File:        {input_file}")
+    print(f"Output File:       {output_file}")
+    print(f"Confidence Filter: {'MIN >= ' + str(min_confidence) if min_confidence > 0.0 else 'UNFILTERED (0.0)'}")
 
     # 1. Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    print(f"Device:            {device}")
     if torch.cuda.is_available():
         vram = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
-        print(f"GPU: {torch.cuda.get_device_name(0)} ({vram:.2f} GB VRAM)")
+        print(f"GPU:               {torch.cuda.get_device_name(0)} ({vram:.2f} GB VRAM)")
 
     # 2. Parse explicit record IDs if provided
     explicit_ids = None
@@ -436,7 +517,7 @@ def run_champion_inference(
     id2label = {int(k): v for k, v in ref_cfg.id2label.items()}
     label2id = {v: k for k, v in id2label.items()}
     o_label_id = label2id[O_LABEL_NAME]
-    print(f"BIO classes: {len(id2label)} ('{O_LABEL_NAME}' ID = {o_label_id})")
+    print(f"BIO classes:       {len(id2label)} ('{O_LABEL_NAME}' ID = {o_label_id})")
 
     # 5. Model 1: GBERT (Weight = 0.40)
     print("\n--- [1/4] GBERT CHAMPION INFERENCE (WEIGHT = 0.40) ---")
@@ -515,7 +596,7 @@ def run_champion_inference(
     del probs_21
     del xlmr_ds, xlmr_tok
 
-    # 10. Probability Fusion & Entity Extraction (Method A)
+    # 10. Probability Fusion & Entity Extraction (Method A + Confidence Filtering)
     print("\n==================================================")
     print("ENSEMBLE FUSION & SUBMISSION GENERATION (METHOD A)")
     print("==================================================")
@@ -542,13 +623,31 @@ def run_champion_inference(
             pred_ids = np.argmax(p_fused, axis=-1)
             pred_bio = [id2label[pid] for pid in pred_ids]
 
-            entities = bio_to_entities(tokens, pred_bio)
-            non_o_entities = [(asp, val) for asp, val in entities if asp != "O"]
-            cat_valid_entities = filter_entities_by_category(non_o_entities, cat_id)
+            # Extract confidence assigned to each token's selected label
+            selected_probs = [float(p_fused[t_idx, pred_ids[t_idx]]) for t_idx in range(len(tokens))]
 
-            if cat_valid_entities:
+            # Reconstruct entities with mean & min confidence
+            raw_conf_entities = bio_to_entities_with_confidence(tokens, pred_bio, selected_probs)
+
+            # Method A: Category-aware post-filtering
+            cat_valid_entities = filter_entities_by_category(raw_conf_entities, cat_id)
+
+            # Apply Entity-Level Minimum Confidence Filtering
+            if min_confidence > 0.0:
+                final_entities = [
+                    (asp, val)
+                    for asp, val, mean_c, min_c in cat_valid_entities
+                    if min_c >= min_confidence
+                ]
+            else:
+                final_entities = [
+                    (asp, val)
+                    for asp, val, mean_c, min_c in cat_valid_entities
+                ]
+
+            if final_entities:
                 titles_with_entities += 1
-                for aspect_name, aspect_val in cat_valid_entities:
+                for aspect_name, aspect_val in final_entities:
                     f.write(f"{rec_id}\t{cat_id}\t{aspect_name}\t{aspect_val}\n")
                     rows_written += 1
                     aspect_counts[aspect_name] = aspect_counts.get(aspect_name, 0) + 1
@@ -563,9 +662,10 @@ def run_champion_inference(
     print(f"  Output Path:            {output_file}")
     print(f"  SHA-256 Hash:           {sha256_hash}")
     print(f"  File Size:              {file_size_mb:.2f} MB")
-    print(f"  Total Data Rows:        {rows_written}")
-    print(f"  Titles with Entities:   {titles_with_entities} ({(titles_with_entities / len(candidate_records)) * 100:.2f}%)")
-    print(f"  Zero-Entity Titles:     {titles_without_entities} ({(titles_without_entities / len(candidate_records)) * 100:.2f}%)")
+    print(f"  Total Data Rows:        {rows_written:,}")
+    print(f"  Confidence Filter:      {'MIN >= ' + str(min_confidence) if min_confidence > 0.0 else 'UNFILTERED (0.0)'}")
+    print(f"  Titles with Entities:   {titles_with_entities:,} ({(titles_with_entities / len(candidate_records)) * 100:.2f}%)")
+    print(f"  Zero-Entity Titles:     {titles_without_entities:,} ({(titles_without_entities / len(candidate_records)) * 100:.2f}%)")
     print(f"  Total Pipeline Runtime: {total_runtime:.1f}s ({total_runtime / 60:.2f} min)")
 
     # 11. Standalone Validation
@@ -593,6 +693,7 @@ def run_champion_inference(
     return {
         "output_path": str(output_file),
         "sha256": sha256_hash,
+        "min_confidence": min_confidence,
         "total_records": len(candidate_records),
         "total_rows": rows_written,
         "titles_with_entities": titles_with_entities,
@@ -603,7 +704,7 @@ def run_champion_inference(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Phase 24 Configurable Test Inference Pipeline")
+    parser = argparse.ArgumentParser(description="Phase 28 Configurable Test Inference Pipeline")
     parser.add_argument(
         "--input-file",
         type=Path,
@@ -635,6 +736,12 @@ def main():
         help="Optional path to file with explicit record IDs (one per line)",
     )
     parser.add_argument(
+        "--min-confidence",
+        type=float,
+        default=DEFAULT_MIN_CONFIDENCE,
+        help=f"Entity-level minimum-token confidence threshold (default: {DEFAULT_MIN_CONFIDENCE:.2f}, use 0.0 for unfiltered)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Run fast synthetic dry-run verification without model inference",
@@ -642,7 +749,12 @@ def main():
     parser.add_argument(
         "--reproduce-quiz",
         action="store_true",
-        help="Run inference on Quiz records (5001..30000) and verify SHA-256 matches baseline",
+        help="Run inference on Quiz records (5001..30000) and verify SHA-256 for specified --min-confidence",
+    )
+    parser.add_argument(
+        "--verify-all-quiz",
+        action="store_true",
+        help="Run full Quiz verification for BOTH MIN 0.60 champion and unfiltered baseline bit-for-bit",
     )
     parser.add_argument(
         "--batch-size",
@@ -668,30 +780,120 @@ def main():
         run_synthetic_dry_run()
         return
 
+    if args.verify_all_quiz:
+        print("\n" + "=" * 70)
+        print("PHASE 28: DUAL QUIZ REPRODUCTION & BIT-FOR-BIT VERIFICATION")
+        print("=" * 70)
+
+        # 1. Reproduce MIN 0.60 Champion
+        target_060 = Path("submissions/submission_quiz_exp28_reproduced_min060.tsv")
+        print("\n[PART 1/2] Reproducing Official MIN 0.60 Champion...")
+        res_060 = run_champion_inference(
+            input_file=Path("data/raw/Listing_Titles.tsv.gz"),
+            output_file=target_060,
+            start_record=5001,
+            end_record=30000,
+            min_confidence=0.60,
+            batch_size=args.batch_size,
+            cache_dir=args.cache_dir,
+            clean_cache_after=False,  # preserve cache for Part 2
+        )
+
+        print("\n--- HASH & BYTE COMPARISON: MIN 0.60 CHAMPION ---")
+        print(f"Reproduced SHA-256: {res_060['sha256']}")
+        print(f"Expected SHA-256:   {KNOWN_QUIZ_MIN060_SHA256}")
+        if res_060["sha256"] != KNOWN_QUIZ_MIN060_SHA256:
+            raise RuntimeError(f"MIN 0.60 Hash Mismatch! Got {res_060['sha256']}, expected {KNOWN_QUIZ_MIN060_SHA256}")
+        print(">>> MIN 0.60 SHA-256 EXACT MATCH <<<")
+
+        if REFERENCE_QUIZ_MIN060_PATH.exists():
+            identical_060, msg_060 = compare_files_byte_for_byte(target_060, REFERENCE_QUIZ_MIN060_PATH)
+            print(f"Byte-for-byte check vs {REFERENCE_QUIZ_MIN060_PATH}: {msg_060}")
+            if not identical_060:
+                raise RuntimeError(f"Byte difference detected in MIN 0.60 file: {msg_060}")
+            print(">>> MIN 0.60 BYTE-FOR-BYTE IDENTICAL <<<")
+
+        # 2. Reproduce Unfiltered Baseline (0.0)
+        target_unf = Path("submissions/submission_quiz_exp28_reproduced_unfiltered.tsv")
+        print("\n[PART 2/2] Reproducing Original Unfiltered Baseline (0.00)...")
+        res_unf = run_champion_inference(
+            input_file=Path("data/raw/Listing_Titles.tsv.gz"),
+            output_file=target_unf,
+            start_record=5001,
+            end_record=30000,
+            min_confidence=0.00,
+            batch_size=args.batch_size,
+            cache_dir=args.cache_dir,
+            clean_cache_after=args.clean_cache,
+        )
+
+        print("\n--- HASH & BYTE COMPARISON: UNFILTERED BASELINE ---")
+        print(f"Reproduced SHA-256: {res_unf['sha256']}")
+        print(f"Expected SHA-256:   {KNOWN_QUIZ_BASELINE_SHA256}")
+        if res_unf["sha256"] != KNOWN_QUIZ_BASELINE_SHA256:
+            raise RuntimeError(f"Unfiltered Baseline Hash Mismatch! Got {res_unf['sha256']}, expected {KNOWN_QUIZ_BASELINE_SHA256}")
+        print(">>> UNFILTERED BASELINE SHA-256 EXACT MATCH <<<")
+
+        if REFERENCE_QUIZ_BASELINE_PATH.exists():
+            identical_unf, msg_unf = compare_files_byte_for_byte(target_unf, REFERENCE_QUIZ_BASELINE_PATH)
+            print(f"Byte-for-byte check vs {REFERENCE_QUIZ_BASELINE_PATH}: {msg_unf}")
+            if not identical_unf:
+                raise RuntimeError(f"Byte difference detected in Unfiltered file: {msg_unf}")
+            print(">>> UNFILTERED BASELINE BYTE-FOR-BYTE IDENTICAL <<<")
+
+        print("\n" + "=" * 70)
+        print(">>> ALL PHASE 28 REPRODUCTION VERIFICATIONS PASSED 100% <<<")
+        print("=" * 70)
+        return
+
     if args.reproduce_quiz:
-        out_target = Path("submissions/submission_quiz_exp10_reproduced.tsv")
+        is_min060 = abs(args.min_confidence - 0.60) < 1e-5
+        is_unfiltered = abs(args.min_confidence - 0.00) < 1e-5
+
+        if is_min060:
+            out_target = Path("submissions/submission_quiz_exp28_reproduced_min060.tsv")
+            expected_hash = KNOWN_QUIZ_MIN060_SHA256
+            ref_path = REFERENCE_QUIZ_MIN060_PATH
+        elif is_unfiltered:
+            out_target = Path("submissions/submission_quiz_exp28_reproduced_unfiltered.tsv")
+            expected_hash = KNOWN_QUIZ_BASELINE_SHA256
+            ref_path = REFERENCE_QUIZ_BASELINE_PATH
+        else:
+            out_target = Path(f"submissions/submission_quiz_exp28_reproduced_min{int(args.min_confidence*100):03d}.tsv")
+            expected_hash = None
+            ref_path = None
+
         res = run_champion_inference(
             input_file=Path("data/raw/Listing_Titles.tsv.gz"),
             output_file=out_target,
             start_record=5001,
             end_record=30000,
+            min_confidence=args.min_confidence,
             batch_size=args.batch_size,
             cache_dir=args.cache_dir,
             clean_cache_after=args.clean_cache,
         )
+
         print("\n==================================================")
         print("QUIZ REPRODUCTION HASH COMPARISON")
         print("==================================================")
-        print(f"Reproduced SHA-256:  {res['sha256']}")
-        print(f"Known Baseline SHA:  {KNOWN_QUIZ_BASELINE_SHA256}")
-        if res["sha256"] == KNOWN_QUIZ_BASELINE_SHA256:
-            print("MATCH CONFIRMED: Original champion reproduces bit-for-bit!")
-        else:
-            print("WARNING: Hash difference detected. Investigating differences...")
+        print(f"Reproduced SHA-256: {res['sha256']}")
+        if expected_hash:
+            print(f"Expected SHA-256:   {expected_hash}")
+            if res["sha256"] == expected_hash:
+                print("MATCH CONFIRMED: Champion reproduces bit-for-bit!")
+            else:
+                raise RuntimeError(f"Hash difference detected! Got {res['sha256']}, expected {expected_hash}")
+
+            if ref_path and ref_path.exists():
+                is_identical, comp_msg = compare_files_byte_for_byte(out_target, ref_path)
+                print(f"Byte-for-byte check vs {ref_path}: {comp_msg}")
+                if not is_identical:
+                    raise RuntimeError(f"Byte mismatch: {comp_msg}")
         return
 
     if args.output_file is None:
-        print("Error: Please specify --output-file (or run with --dry-run / --reproduce-quiz)")
+        print("Error: Please specify --output-file (or run with --dry-run / --reproduce-quiz / --verify-all-quiz)")
         sys.exit(1)
 
     run_champion_inference(
@@ -700,6 +902,7 @@ def main():
         start_record=args.start_record,
         end_record=args.end_record,
         record_ids_file=args.record_ids_file,
+        min_confidence=args.min_confidence,
         batch_size=args.batch_size,
         cache_dir=args.cache_dir,
         clean_cache_after=args.clean_cache,

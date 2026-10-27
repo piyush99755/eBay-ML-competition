@@ -1,4 +1,5 @@
 from collections import Counter
+import numpy as np
 
 
 BETA = 0.2
@@ -100,15 +101,74 @@ def bio_to_entities(
     return entities
 
 
+def bio_to_entities_with_confidence(
+    tokens: list[str],
+    bio_tags: list[str],
+    token_probs: list[float],
+) -> list[tuple[str, str, float, float]]:
+    """
+    Extract entities and compute mean and min confidence across constituent tokens.
+    Returns: [(aspect_name, aspect_value, mean_conf, min_conf), ...]
+    """
+    if len(tokens) != len(bio_tags) or len(tokens) != len(token_probs):
+        raise ValueError("Lengths of tokens, tags, and probs must match.")
+
+    entities = []
+    current_aspect = None
+    current_tokens = []
+    current_probs = []
+
+    def close_current_entity() -> None:
+        nonlocal current_aspect, current_tokens, current_probs
+        if current_aspect is not None and current_tokens:
+            value = " ".join(current_tokens)
+            mean_conf = float(np.mean(current_probs))
+            min_conf = float(np.min(current_probs))
+            entities.append((current_aspect, value, mean_conf, min_conf))
+        current_aspect = None
+        current_tokens = []
+        current_probs = []
+
+    for token, tag, prob in zip(tokens, bio_tags, token_probs):
+        if tag == "O":
+            close_current_entity()
+            continue
+
+        if tag.startswith("B-"):
+            close_current_entity()
+            current_aspect = tag[2:]
+            current_tokens = [token]
+            current_probs = [prob]
+            continue
+
+        if tag.startswith("I-"):
+            aspect = tag[2:]
+            if current_aspect == aspect:
+                current_tokens.append(token)
+                current_probs.append(prob)
+            else:
+                close_current_entity()
+                current_aspect = aspect
+                current_tokens = [token]
+                current_probs = [prob]
+            continue
+
+        raise ValueError(f"Unknown BIO tag: {tag}")
+
+    close_current_entity()
+    return entities
+
+
 def filter_entities_by_category(
-    entities: list[tuple[str, str]],
+    entities: list[tuple],
     category: int,
     allowed_cat1: set[str] = None,
     allowed_cat2: set[str] = None,
-) -> list[tuple[str, str]]:
+) -> list[tuple]:
     """
     Filter extracted entities to only those allowed for the specific listing category.
     Category 1 allows 23 aspects; Category 2 allows 20 aspects (per Annexure.pdf pp. 11-14).
+    Accepts both 2-tuples (aspect, value) and 4-tuples (aspect, value, mean_conf, min_conf).
     """
     if allowed_cat1 is None or allowed_cat2 is None:
         from scripts.validate_submission import (
@@ -119,7 +179,7 @@ def filter_entities_by_category(
         allowed_cat2 = OFFICIAL_ASPECTS_CAT2
 
     allowed = allowed_cat1 if category == 1 else allowed_cat2
-    return [(asp, val) for asp, val in entities if asp in allowed]
+    return [e for e in entities if e[0] in allowed]
 
 
 def count_matches(
