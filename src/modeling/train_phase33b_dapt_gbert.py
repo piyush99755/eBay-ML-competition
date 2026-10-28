@@ -120,10 +120,10 @@ def train_dapt_supervised(
     df = load_training_data()
     all_examples = build_examples(df)
 
-    # Filter to first 4,000 for Split A training
-    split_a_train_examples = all_examples[:4000]
+    # Stratified 80/20 train/validation split (matching champion Split-A)
+    train_4k, val_1k = split_examples(all_examples, random_state=RANDOM_SEED)
     train_examples, dev_examples, split_manifest = get_internal_split(
-        split_a_train_examples, random_state=RANDOM_SEED
+        train_4k, random_state=RANDOM_SEED
     )
     print(f"Internal Train Examples: {len(train_examples):,} titles")
     print(f"Internal Dev Examples:   {len(dev_examples):,} titles")
