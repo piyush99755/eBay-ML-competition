@@ -140,7 +140,7 @@ def compute_metrics(
 
     for ex_idx, (gold, pred) in enumerate(zip(gold_per_ex, preds_per_ex)):
         cat_id = examples[ex_idx]["category"]
-        tp, fp, fn = count_matches(gold, pred)
+        tp, fp, fn = count_matches(pred, gold)
         total_tp += tp
         total_fp += fp
         total_fn += fn
@@ -158,7 +158,7 @@ def compute_metrics(
         for asp in all_asps:
             g_ents = [e for e in gold if e[0] == asp]
             p_ents = [e for e in pred if e[0] == asp]
-            a_tp, a_fp, a_fn = count_matches(g_ents, p_ents)
+            a_tp, a_fp, a_fn = count_matches(p_ents, g_ents)
             aspect_counts[asp]["tp"] += a_tp
             aspect_counts[asp]["fp"] += a_fp
             aspect_counts[asp]["fn"] += a_fn
@@ -174,7 +174,7 @@ def compute_metrics(
         res["tp"] = c["tp"]
         res["fp"] = c["fp"]
         res["fn"] = c["fn"]
-        cat_results[cat] = res
+        cat_results[str(cat)] = res
 
     asp_results = {}
     for asp, c in aspect_counts.items():
@@ -210,8 +210,8 @@ def compute_paired_bootstrap(
 
         for idx in indices:
             gold = gold_per_ex[idx]
-            ta, fa, na = count_matches(gold, preds_a[idx])
-            tb, fb, nb = count_matches(gold, preds_b[idx])
+            ta, fa, na = count_matches(preds_a[idx], gold)
+            tb, fb, nb = count_matches(preds_b[idx], gold)
             tp_a += ta; fp_a += fa; fn_a += na
             tp_b += tb; fp_b += fb; fn_b += nb
 
@@ -275,7 +275,7 @@ def run_evaluation():
     t_start = time.time()
     if probs_cache_path.exists():
         print(f"\nLoading cached probabilities for all 5 models from {probs_cache_path}...")
-        probs = torch.load(probs_cache_path, map_location="cpu")
+        probs = torch.load(probs_cache_path, map_location="cpu", weights_only=False)
     else:
         probs = {}
         for name, ckpt_path in CHECKPOINTS.items():
