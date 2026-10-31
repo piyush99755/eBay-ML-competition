@@ -1,5 +1,6 @@
 # Data exclusion
-/data/
+/data/*
+!/data/analysis/
 *.tsv
 *.tsv.gz
 *.csv

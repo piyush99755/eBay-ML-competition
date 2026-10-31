@@ -1,0 +1,2484 @@
+{
+  "phase": 51,
+  "timestamp": "2026-10-30 22:28:37",
+  "elapsed_seconds": 6.1,
+  "data_provenance": {
+    "primary_discovery_dataset": "4,000 Split-A training titles",
+    "out_of_sample_verification_dataset": "1,000 Split-A validation titles",
+    "clean_holdout_status": "Strictly excluded from rule derivation",
+    "quiz_test_status": "Strictly excluded"
+  },
+  "gold_entity_inventory": {
+    "total_entities": 30406,
+    "aspect_counts": {
+      "Kompatibles_Fahrzeug_Modell": 7480,
+      "Kompatible_Fahrzeug_Marke": 5970,
+      "Im_Lieferumfang_Enthalten": 5101,
+      "Hersteller": 3177,
+      "Produktart": 2800,
+      "Einbauposition": 2188,
+      "Herstellernummer": 1161,
+      "Bremsscheiben-Aussendurchmesser": 959,
+      "Bremsscheibenart": 279,
+      "Maßeinheit": 277,
+      "Oe/Oem_Referenznummer(N)": 215,
+      "Anzahl_Der_Einheiten": 210,
+      "Kompatibles_Fahrzeug_Jahr": 195,
+      "Modell": 101,
+      "Produktlinie": 85,
+      "Besonderheiten": 60,
+      "Material": 27,
+      "Anwendung": 26,
+      "Größe": 21,
+      "Menge": 21,
+      "Stärke": 19,
+      "Oberflächenbeschaffenheit": 15,
+      "SAE_Viskosität": 5,
+      "Farbe": 4,
+      "Länge": 3,
+      "Breite": 3,
+      "Zähnezahl": 2,
+      "Herstellungsland_Und_-Region": 1,
+      "Technologie": 1
+    },
+    "aspect_length_distributions": {
+      "Hersteller": {
+        "1_token": 2895,
+        "2_tokens": 279,
+        "3+_tokens": 3
+      },
+      "Produktart": {
+        "1_token": 2422,
+        "2_tokens": 304,
+        "3+_tokens": 74
+      },
+      "Im_Lieferumfang_Enthalten": {
+        "1_token": 4978,
+        "2_tokens": 111,
+        "3+_tokens": 12
+      },
+      "Kompatible_Fahrzeug_Marke": {
+        "1_token": 5836,
+        "2_tokens": 133,
+        "3+_tokens": 1
+      },
+      "Kompatibles_Fahrzeug_Modell": {
+        "1_token": 4484,
+        "2_tokens": 1606,
+        "3+_tokens": 1390
+      },
+      "Herstellernummer": {
+        "1_token": 917,
+        "2_tokens": 118,
+        "3+_tokens": 126
+      },
+      "Oe/Oem_Referenznummer(N)": {
+        "1_token": 193,
+        "2_tokens": 14,
+        "3+_tokens": 8
+      },
+      "Einbauposition": {
+        "1_token": 2095,
+        "2_tokens": 93
+      },
+      "Anzahl_Der_Einheiten": {
+        "1_token": 208,
+        "2_tokens": 2
+      },
+      "Bremsscheiben-Aussendurchmesser": {
+        "1_token": 958,
+        "2_tokens": 1
+      },
+      "Bremsscheibenart": {
+        "1_token": 276,
+        "2_tokens": 3
+      },
+      "Kompatibles_Fahrzeug_Jahr": {
+        "1_token": 188,
+        "2_tokens": 7
+      },
+      "Anwendung": {
+        "1_token": 25,
+        "2_tokens": 1
+      },
+      "Maßeinheit": {
+        "1_token": 277
+      },
+      "Produktlinie": {
+        "1_token": 80,
+        "2_tokens": 5
+      },
+      "Größe": {
+        "1_token": 20,
+        "2_tokens": 1
+      },
+      "Modell": {
+        "1_token": 89,
+        "2_tokens": 10,
+        "3+_tokens": 2
+      },
+      "Stärke": {
+        "1_token": 19
+      },
+      "Besonderheiten": {
+        "1_token": 57,
+        "2_tokens": 3
+      },
+      "Menge": {
+        "1_token": 21
+      },
+      "Länge": {
+        "1_token": 3
+      },
+      "Breite": {
+        "1_token": 3
+      },
+      "Herstellungsland_Und_-Region": {
+        "1_token": 1
+      },
+      "Material": {
+        "1_token": 27
+      },
+      "Oberflächenbeschaffenheit": {
+        "1_token": 15
+      },
+      "SAE_Viskosität": {
+        "1_token": 4,
+        "2_tokens": 1
+      },
+      "Farbe": {
+        "1_token": 4
+      },
+      "Zähnezahl": {
+        "1_token": 2
+      },
+      "Technologie": {
+        "1_token": 1
+      }
+    }
+  },
+  "pattern_taxonomy": {
+    "chassis_parens": {
+      "category": "chassis_code",
+      "regex": "^\\([A-Z0-9,/+\\- ]+\\)$",
+      "description": "Parenthesized chassis or platform code (e.g. (8V), (W447), (E91), (154))"
+    },
+    "chassis_brackets": {
+      "category": "chassis_code",
+      "regex": "^\\[[A-Z0-9,/+\\- ]+\\]$",
+      "description": "Bracketed chassis or platform code (e.g. [B6], [E36], [B7])"
+    },
+    "chassis_bmw_e": {
+      "category": "chassis_code",
+      "regex": "^E\\d{2,3}$",
+      "description": "BMW E-series chassis code (e.g. E36, E46, E90, E91, E60, E87)"
+    },
+    "chassis_bmw_f_g": {
+      "category": "chassis_code",
+      "regex": "^[FG]\\d{2,3}$",
+      "description": "BMW F/G-series chassis code (e.g. F10, F20, F30, F31, F25, G20)"
+    },
+    "chassis_merc_w_s_c_x": {
+      "category": "chassis_code",
+      "regex": "^[WSCX]\\d{3}$",
+      "description": "Mercedes W/S/C/X series code (e.g. W124, W204, W210, W211, S204)"
+    },
+    "chassis_audi_vag": {
+      "category": "chassis_code",
+      "regex": "^(8[VLPEK]|4[BFGH]|B[5-9]|C[4-8]|6[RC]|9N|1K|5K|5Q|1T|3C|3G)$",
+      "description": "Audi / VAG generation platform code (e.g. 8V, B8, B9, 4G, C5, 6R)"
+    },
+    "chassis_mini_r": {
+      "category": "chassis_code",
+      "regex": "^R\\d{2,3}$",
+      "description": "Mini / Mercedes R series code (e.g. R50, R52, R53, R56, R170)"
+    },
+    "chassis_opel_letter": {
+      "category": "chassis_code",
+      "regex": "^[A-K]$",
+      "context_preceding": [
+        "astra",
+        "corsa",
+        "vectra",
+        "zafira",
+        "vivaro",
+        "insignia",
+        "meriva"
+      ],
+      "description": "Opel single-letter generation code following model (e.g. Astra H, Corsa D, Vectra B)"
+    },
+    "gen_roman_num": {
+      "category": "generation_code",
+      "regex": "^(I|II|III|IV|V|VI|VII|VIII)$",
+      "description": "Roman numeral generation (e.g. Golf IV, Clio II, Scenic III, Polo III)"
+    },
+    "gen_arabic_num": {
+      "category": "generation_code",
+      "regex": "^[1-8]$",
+      "description": "Single-digit Arabic generation numeral (e.g. Golf 4, Focus 3, Trafic 3, Superb 2)"
+    },
+    "gen_mk_prefix": {
+      "category": "generation_code",
+      "regex": "^MK[1-8]$",
+      "description": "Mk generation prefix (e.g. MK1, MK2, MK3, MK4, MK5, MK6, MK7)"
+    },
+    "engine_fuel_tech": {
+      "category": "engine_trim",
+      "regex": "^(TDI|CDI|TSI|TFSI|DCI|HDI|CRDI|JTD|MULTIJET|FSI|GDI)$",
+      "description": "Fuel and engine technology acronym (e.g. TDI, CDI, TSI, TFSI)"
+    },
+    "trim_sport_perf": {
+      "category": "engine_trim",
+      "regex": "^(GTI|GTD|GTE|AMG|RS|ST|OPC|CUPRA|FR)$",
+      "description": "Performance / sport trim badge (e.g. GTI, AMG, RS, ST, OPC)"
+    },
+    "engine_spec_disp": {
+      "category": "engine_trim",
+      "regex": "^\\d\\.\\d[A-Z]?$",
+      "description": "Engine displacement designation (e.g. 1.4, 1.6, 1.9, 2.0, 3.0)"
+    },
+    "engine_valve_cyl": {
+      "category": "engine_trim",
+      "regex": "^(16V|V6|V8|24V|8V|W12)$",
+      "description": "Valve / cylinder configuration (e.g. 16V, V6, V8, 24V)"
+    },
+    "drivetrain": {
+      "category": "engine_trim",
+      "regex": "^(QUATTRO|4MOTION|4X4|ALLRAD|AWD|4MATIC|SYNCRO)$",
+      "description": "All-wheel drive system badge (e.g. quattro, 4motion, Allrad, 4Matic)"
+    },
+    "body_variant": {
+      "category": "body_variant",
+      "regex": "^(VARIANT|TOURING|AVANT|COMBI|KOMBI|CABRIO|CABRIOLET|COUPE|SPORTBACK|LIMOUSINE|COMPACT|ALLTRACK|SPORTSVAN)$",
+      "description": "Body style / variant name (e.g. Variant, Touring, Avant, Combi, Cabrio)"
+    },
+    "separator_slash": {
+      "category": "separator",
+      "regex": "^/$",
+      "description": "Slash separator between multiple models (e.g. Golf / Bora, X3 / X4)"
+    },
+    "separator_plus": {
+      "category": "separator",
+      "regex": "^\\+$",
+      "description": "Plus separator between multiple models (e.g. Passat + Variant)"
+    }
+  },
+  "pattern_statistics": {
+    "separator_plus": {
+      "pattern_id": "separator_plus",
+      "category": "separator",
+      "description": "Plus separator between multiple models (e.g. Passat + Variant)",
+      "total_occurrences": 1609,
+      "included_cont": 0,
+      "split_new_model": 0,
+      "excluded_o": 1608,
+      "other_aspect": 1,
+      "inclusion_rate": 0.0,
+      "split_rate": 0.0,
+      "exclusion_o_rate": 0.9994,
+      "other_aspect_rate": 0.0006,
+      "total_model_rate": 0.0,
+      "classification": "CONSISTENT_EXCLUDED",
+      "top_other_aspects": {
+        "Modell": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 608,
+          "token": "+",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "Wasserpumpe + Zahnriemensatz |"
+        },
+        {
+          "rec_id": 1109,
+          "token": "+",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "RS0064 Steuerkettensatz + Dichtung VW"
+        },
+        {
+          "rec_id": 3915,
+          "token": "+",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "Bremsscheiben Ø281mm + Bremsbeläge KLÖTZE"
+        },
+        {
+          "rec_id": 1271,
+          "token": "+",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "EXPERT KITS +"
+        },
+        {
+          "rec_id": 4729,
+          "token": "+",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "BREMBO Bremsbacken + Federn Satz"
+        }
+      ]
+    },
+    "chassis_audi_vag": {
+      "pattern_id": "chassis_audi_vag",
+      "category": "chassis_code",
+      "description": "Audi / VAG generation platform code (e.g. 8V, B8, B9, 4G, C5, 6R)",
+      "total_occurrences": 321,
+      "included_cont": 195,
+      "split_new_model": 123,
+      "excluded_o": 0,
+      "other_aspect": 3,
+      "inclusion_rate": 0.6075,
+      "split_rate": 0.3832,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0093,
+      "total_model_rate": 0.9907,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Oe/Oem_Referenznummer(N)": 3
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 3282,
+          "token": "8V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A3 S3 8V für VW"
+        },
+        {
+          "rec_id": 1569,
+          "token": "B8",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "AUDI A4 B8 Avant A5"
+        },
+        {
+          "rec_id": 587,
+          "token": "B5",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A4 8D2 B5 ALZ AHL"
+        },
+        {
+          "rec_id": 4386,
+          "token": "B6",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Audi A4 B6 B7 A6"
+        },
+        {
+          "rec_id": 4386,
+          "token": "B7",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A4 B6 B7 A6 C5"
+        }
+      ]
+    },
+    "engine_valve_cyl": {
+      "pattern_id": "engine_valve_cyl",
+      "category": "engine_trim",
+      "description": "Valve / cylinder configuration (e.g. 16V, V6, V8, 24V)",
+      "total_occurrences": 99,
+      "included_cont": 83,
+      "split_new_model": 16,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.8384,
+      "split_rate": 0.1616,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "MODERATELY_VARIABLE",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 3282,
+          "token": "8V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A3 S3 8V für VW"
+        },
+        {
+          "rec_id": 1904,
+          "token": "16V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "OPEL 1,8 16V X18XE 2,0"
+        },
+        {
+          "rec_id": 1904,
+          "token": "16V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "X18XE 2,0 16V X20XEV Omega"
+        },
+        {
+          "rec_id": 4532,
+          "token": "16V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "B 1.8 16V"
+        },
+        {
+          "rec_id": 1739,
+          "token": "16V",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Polo 1,4 16V Febi 23530"
+        }
+      ]
+    },
+    "gen_arabic_num": {
+      "pattern_id": "gen_arabic_num",
+      "category": "generation_code",
+      "description": "Single-digit Arabic generation numeral (e.g. Golf 4, Focus 3, Trafic 3, Superb 2)",
+      "total_occurrences": 707,
+      "included_cont": 341,
+      "split_new_model": 209,
+      "excluded_o": 0,
+      "other_aspect": 157,
+      "inclusion_rate": 0.4823,
+      "split_rate": 0.2956,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.2221,
+      "total_model_rate": 0.7779,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Anzahl_Der_Einheiten": 120,
+        "Herstellernummer": 29,
+        "Oe/Oem_Referenznummer(N)": 3
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 3915,
+          "token": "2",
+          "tag": "B-Anzahl_Der_Einheiten",
+          "status": "other_aspect",
+          "context": "2 BOSCH Bremsscheiben"
+        },
+        {
+          "rec_id": 3915,
+          "token": "4",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "Toyota RAV 4 III IV"
+        },
+        {
+          "rec_id": 1072,
+          "token": "2",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Seat Ibiza 2 / II"
+        },
+        {
+          "rec_id": 3289,
+          "token": "2",
+          "tag": "B-Anzahl_Der_Einheiten",
+          "status": "other_aspect",
+          "context": "4,4l 2006 2 Bremsscheiben vorne"
+        },
+        {
+          "rec_id": 3815,
+          "token": "4",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "VW Golf 4 Polo AUDI"
+        }
+      ]
+    },
+    "gen_roman_num": {
+      "pattern_id": "gen_roman_num",
+      "category": "generation_code",
+      "description": "Roman numeral generation (e.g. Golf IV, Clio II, Scenic III, Polo III)",
+      "total_occurrences": 584,
+      "included_cont": 497,
+      "split_new_model": 69,
+      "excluded_o": 17,
+      "other_aspect": 1,
+      "inclusion_rate": 0.851,
+      "split_rate": 0.1182,
+      "exclusion_o_rate": 0.0291,
+      "other_aspect_rate": 0.0017,
+      "total_model_rate": 0.9692,
+      "classification": "CONSISTENT_INCLUDED",
+      "top_other_aspects": {
+        "Kompatible_Fahrzeug_Marke": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 3915,
+          "token": "III",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "RAV 4 III IV"
+        },
+        {
+          "rec_id": 3915,
+          "token": "IV",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "4 III IV"
+        },
+        {
+          "rec_id": 1072,
+          "token": "II",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "2 / II 1.8i Bremsen"
+        },
+        {
+          "rec_id": 1504,
+          "token": "II",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "VW GOLF II (19E, 1G1)"
+        },
+        {
+          "rec_id": 1504,
+          "token": "I",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "1G1) GOLF I (17)"
+        }
+      ]
+    },
+    "chassis_bmw_e": {
+      "pattern_id": "chassis_bmw_e",
+      "category": "chassis_code",
+      "description": "BMW E-series chassis code (e.g. E36, E46, E90, E91, E60, E87)",
+      "total_occurrences": 307,
+      "included_cont": 104,
+      "split_new_model": 203,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.3388,
+      "split_rate": 0.6612,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 2109,
+          "token": "E83",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "BMW X3 E83 Satz Vorne"
+        },
+        {
+          "rec_id": 2474,
+          "token": "E60",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "5er BMW E60 Hinterachse Bremsscheiben"
+        },
+        {
+          "rec_id": 1523,
+          "token": "E46",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "N42 N46 E46 E90 E88"
+        },
+        {
+          "rec_id": 1523,
+          "token": "E90",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "N46 E46 E90 E88 E81"
+        },
+        {
+          "rec_id": 1523,
+          "token": "E88",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "E46 E90 E88 E81"
+        }
+      ]
+    },
+    "separator_slash": {
+      "pattern_id": "separator_slash",
+      "category": "separator",
+      "description": "Slash separator between multiple models (e.g. Golf / Bora, X3 / X4)",
+      "total_occurrences": 101,
+      "included_cont": 0,
+      "split_new_model": 0,
+      "excluded_o": 101,
+      "other_aspect": 0,
+      "inclusion_rate": 0.0,
+      "split_rate": 0.0,
+      "exclusion_o_rate": 1.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 0.0,
+      "classification": "CONSISTENT_EXCLUDED",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 1072,
+          "token": "/",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "Ibiza 2 / II 1.8i"
+        },
+        {
+          "rec_id": 4686,
+          "token": "/",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "1,3 Diesel / Opel /"
+        },
+        {
+          "rec_id": 4686,
+          "token": "/",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "/ Opel / Fiat 1300ccm"
+        },
+        {
+          "rec_id": 2408,
+          "token": "/",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "Renault 1.4 / 1.6"
+        },
+        {
+          "rec_id": 3551,
+          "token": "/",
+          "tag": "O",
+          "status": "excluded_o",
+          "context": "TT 8S / VW GOLF"
+        }
+      ]
+    },
+    "engine_spec_disp": {
+      "pattern_id": "engine_spec_disp",
+      "category": "engine_trim",
+      "description": "Engine displacement designation (e.g. 1.4, 1.6, 1.9, 2.0, 3.0)",
+      "total_occurrences": 863,
+      "included_cont": 570,
+      "split_new_model": 286,
+      "excluded_o": 1,
+      "other_aspect": 6,
+      "inclusion_rate": 0.6605,
+      "split_rate": 0.3314,
+      "exclusion_o_rate": 0.0012,
+      "other_aspect_rate": 0.007,
+      "total_model_rate": 0.9919,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Menge": 5,
+        "Modell": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 1072,
+          "token": "1.8i",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "/ II 1.8i Bremsen Bremsscheiben"
+        },
+        {
+          "rec_id": 2206,
+          "token": "1.9",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "VW Passat 1.9 TDI T4"
+        },
+        {
+          "rec_id": 2206,
+          "token": "1.9",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "TDI T4 1.9 D"
+        },
+        {
+          "rec_id": 2610,
+          "token": "1.9L",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "80 4000 1.9L"
+        },
+        {
+          "rec_id": 2820,
+          "token": "1.4",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "X J13 1.4 1.6"
+        }
+      ]
+    },
+    "body_variant": {
+      "pattern_id": "body_variant",
+      "category": "body_variant",
+      "description": "Body style / variant name (e.g. Variant, Touring, Avant, Combi, Cabrio)",
+      "total_occurrences": 215,
+      "included_cont": 125,
+      "split_new_model": 87,
+      "excluded_o": 1,
+      "other_aspect": 2,
+      "inclusion_rate": 0.5814,
+      "split_rate": 0.4047,
+      "exclusion_o_rate": 0.0047,
+      "other_aspect_rate": 0.0093,
+      "total_model_rate": 0.986,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Kompatible_Fahrzeug_Marke": 1,
+        "Im_Lieferumfang_Enthalten": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 1569,
+          "token": "Avant",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A4 B8 Avant A5 Cabrio"
+        },
+        {
+          "rec_id": 1569,
+          "token": "Cabrio",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Avant A5 Cabrio"
+        },
+        {
+          "rec_id": 2610,
+          "token": "COUPE",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "200 QUATTRO COUPE 90 80"
+        },
+        {
+          "rec_id": 1175,
+          "token": "Variant",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Golf 5 Variant Golf Plus"
+        },
+        {
+          "rec_id": 302,
+          "token": "Cabrio",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "R56 R57 Cabrio Cooper One"
+        }
+      ]
+    },
+    "chassis_parens": {
+      "pattern_id": "chassis_parens",
+      "category": "chassis_code",
+      "description": "Parenthesized chassis or platform code (e.g. (8V), (W447), (E91), (154))",
+      "total_occurrences": 307,
+      "included_cont": 161,
+      "split_new_model": 19,
+      "excluded_o": 1,
+      "other_aspect": 126,
+      "inclusion_rate": 0.5244,
+      "split_rate": 0.0619,
+      "exclusion_o_rate": 0.0033,
+      "other_aspect_rate": 0.4104,
+      "total_model_rate": 0.5863,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Herstellernummer": 102,
+        "Oe/Oem_Referenznummer(N)": 14,
+        "Hersteller": 4
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 1504,
+          "token": "(17)",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "GOLF I (17)"
+        },
+        {
+          "rec_id": 2825,
+          "token": "(1420-22634)",
+          "tag": "B-Herstellernummer",
+          "status": "other_aspect",
+          "context": "| ATE (1420-22634)"
+        },
+        {
+          "rec_id": 1975,
+          "token": "(TCK211VVTNG)",
+          "tag": "B-Herstellernummer",
+          "status": "other_aspect",
+          "context": "FAI AutoParts (TCK211VVTNG) Steuerkettensatz für"
+        },
+        {
+          "rec_id": 1429,
+          "token": "(TCK6NG)",
+          "tag": "B-Herstellernummer",
+          "status": "other_aspect",
+          "context": "FAI AutoParts (TCK6NG) Steuerkettensatz für"
+        },
+        {
+          "rec_id": 4677,
+          "token": "(44973)",
+          "tag": "B-Herstellernummer",
+          "status": "other_aspect",
+          "context": "BILSTEIN Steuerkettensatz (44973) für MERCEDES-BENZ"
+        }
+      ]
+    },
+    "engine_fuel_tech": {
+      "pattern_id": "engine_fuel_tech",
+      "category": "engine_trim",
+      "description": "Fuel and engine technology acronym (e.g. TDI, CDI, TSI, TFSI)",
+      "total_occurrences": 299,
+      "included_cont": 284,
+      "split_new_model": 8,
+      "excluded_o": 3,
+      "other_aspect": 4,
+      "inclusion_rate": 0.9498,
+      "split_rate": 0.0268,
+      "exclusion_o_rate": 0.01,
+      "other_aspect_rate": 0.0134,
+      "total_model_rate": 0.9766,
+      "classification": "CONSISTENT_INCLUDED",
+      "top_other_aspects": {
+        "Hersteller": 2,
+        "Oe/Oem_Referenznummer(N)": 1,
+        "Herstellernummer": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 2206,
+          "token": "TDI",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Passat 1.9 TDI T4 1.9"
+        },
+        {
+          "rec_id": 319,
+          "token": "TDI",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Wasserpumpe 1,9 TDI AGP AQM"
+        },
+        {
+          "rec_id": 2586,
+          "token": "JTD",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Lancia 1.9 JTD Multijet"
+        },
+        {
+          "rec_id": 2586,
+          "token": "Multijet",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "1.9 JTD Multijet"
+        },
+        {
+          "rec_id": 740,
+          "token": "TDI",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A5 2,0 TDI (8T3) Set"
+        }
+      ]
+    },
+    "drivetrain": {
+      "pattern_id": "drivetrain",
+      "category": "engine_trim",
+      "description": "All-wheel drive system badge (e.g. quattro, 4motion, Allrad, 4Matic)",
+      "total_occurrences": 37,
+      "included_cont": 30,
+      "split_new_model": 7,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.8108,
+      "split_rate": 0.1892,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "MODERATELY_VARIABLE",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 2610,
+          "token": "QUATTRO",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "100/5000 200 QUATTRO COUPE 90"
+        },
+        {
+          "rec_id": 4682,
+          "token": "quattro",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "2.5 TDI quattro"
+        },
+        {
+          "rec_id": 4885,
+          "token": "Quattro",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "A8 [4H] Quattro S8+Tdi+Tfsi"
+        },
+        {
+          "rec_id": 3852,
+          "token": "quattro",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "3.2 FSI quattro BDW 06E109229F"
+        },
+        {
+          "rec_id": 3121,
+          "token": "quattro",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Coupe S2 quattro"
+        }
+      ]
+    },
+    "chassis_mini_r": {
+      "pattern_id": "chassis_mini_r",
+      "category": "chassis_code",
+      "description": "Mini / Mercedes R series code (e.g. R50, R52, R53, R56, R170)",
+      "total_occurrences": 68,
+      "included_cont": 21,
+      "split_new_model": 46,
+      "excluded_o": 0,
+      "other_aspect": 1,
+      "inclusion_rate": 0.3088,
+      "split_rate": 0.6765,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0147,
+      "total_model_rate": 0.9853,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Herstellernummer": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 302,
+          "token": "R55",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "vorne Mini R55 R56 R57"
+        },
+        {
+          "rec_id": 302,
+          "token": "R56",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "Mini R55 R56 R57 Cabrio"
+        },
+        {
+          "rec_id": 302,
+          "token": "R57",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "R55 R56 R57 Cabrio Cooper"
+        },
+        {
+          "rec_id": 3053,
+          "token": "R50",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "One Cooper R50 R53 R52"
+        },
+        {
+          "rec_id": 3053,
+          "token": "R53",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "Cooper R50 R53 R52"
+        }
+      ]
+    },
+    "chassis_merc_w_s_c_x": {
+      "pattern_id": "chassis_merc_w_s_c_x",
+      "category": "chassis_code",
+      "description": "Mercedes W/S/C/X series code (e.g. W124, W204, W210, W211, S204)",
+      "total_occurrences": 220,
+      "included_cont": 79,
+      "split_new_model": 141,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.3591,
+      "split_rate": 0.6409,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 2021,
+          "token": "W204",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "STEUERKETTE MERCEDES W204 C280 W203"
+        },
+        {
+          "rec_id": 2021,
+          "token": "C280",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "MERCEDES W204 C280 W203 W221"
+        },
+        {
+          "rec_id": 2021,
+          "token": "W203",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "W204 C280 W203 W221 W212"
+        },
+        {
+          "rec_id": 2021,
+          "token": "W221",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "C280 W203 W221 W212 M272"
+        },
+        {
+          "rec_id": 2021,
+          "token": "W212",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "W203 W221 W212 M272 6"
+        }
+      ]
+    },
+    "chassis_opel_letter": {
+      "pattern_id": "chassis_opel_letter",
+      "category": "chassis_code",
+      "description": "Opel single-letter generation code following model (e.g. Astra H, Corsa D, Vectra B)",
+      "total_occurrences": 218,
+      "included_cont": 184,
+      "split_new_model": 34,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.844,
+      "split_rate": 0.156,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "MODERATELY_VARIABLE",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 2073,
+          "token": "G",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "OPEL ASTRA G CLASSIC"
+        },
+        {
+          "rec_id": 2693,
+          "token": "A",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "OPEL INSIGNIA A POC J61"
+        },
+        {
+          "rec_id": 4226,
+          "token": "G",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "Agila Astra G H Corsa"
+        },
+        {
+          "rec_id": 4226,
+          "token": "C",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "H Corsa C D 1.2"
+        },
+        {
+          "rec_id": 14,
+          "token": "B",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Opel Zafira B"
+        }
+      ]
+    },
+    "chassis_bmw_f_g": {
+      "pattern_id": "chassis_bmw_f_g",
+      "category": "chassis_code",
+      "description": "BMW F/G-series chassis code (e.g. F10, F20, F30, F31, F25, G20)",
+      "total_occurrences": 189,
+      "included_cont": 56,
+      "split_new_model": 111,
+      "excluded_o": 0,
+      "other_aspect": 22,
+      "inclusion_rate": 0.2963,
+      "split_rate": 0.5873,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.1164,
+      "total_model_rate": 0.8836,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {
+        "Im_Lieferumfang_Enthalten": 18,
+        "Modell": 2,
+        "Besonderheiten": 2
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 1797,
+          "token": "F30",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "N57 E90 F30 F34 F10"
+        },
+        {
+          "rec_id": 1797,
+          "token": "F34",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "E90 F30 F34 F10 F01"
+        },
+        {
+          "rec_id": 1797,
+          "token": "F10",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "F30 F34 F10 F01 F15"
+        },
+        {
+          "rec_id": 1797,
+          "token": "F01",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "F34 F10 F01 F15 F25"
+        },
+        {
+          "rec_id": 1797,
+          "token": "F15",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "F10 F01 F15 F25 330"
+        }
+      ]
+    },
+    "chassis_brackets": {
+      "pattern_id": "chassis_brackets",
+      "category": "chassis_code",
+      "description": "Bracketed chassis or platform code (e.g. [B6], [E36], [B7])",
+      "total_occurrences": 91,
+      "included_cont": 77,
+      "split_new_model": 14,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.8462,
+      "split_rate": 0.1538,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "MODERATELY_VARIABLE",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 1125,
+          "token": "[4H]",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "Audi A8 [4H] - Bremsscheiben"
+        },
+        {
+          "rec_id": 16,
+          "token": "[B6]",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Audi A4 [B6]"
+        },
+        {
+          "rec_id": 1561,
+          "token": "[4L]",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Audi Q7 [4L]"
+        },
+        {
+          "rec_id": 3207,
+          "token": "[B7]",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Audi A4 [B7] - Zimmermann"
+        },
+        {
+          "rec_id": 1882,
+          "token": "[K11]",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Micra II [K11]"
+        }
+      ]
+    },
+    "gen_mk_prefix": {
+      "pattern_id": "gen_mk_prefix",
+      "category": "generation_code",
+      "description": "Mk generation prefix (e.g. MK1, MK2, MK3, MK4, MK5, MK6, MK7)",
+      "total_occurrences": 22,
+      "included_cont": 16,
+      "split_new_model": 6,
+      "excluded_o": 0,
+      "other_aspect": 0,
+      "inclusion_rate": 0.7273,
+      "split_rate": 0.2727,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.0,
+      "total_model_rate": 1.0,
+      "classification": "TRULY_INCONSISTENT",
+      "top_other_aspects": {},
+      "sample_occurrences": [
+        {
+          "rec_id": 308,
+          "token": "MK4",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "FORD MONDEO MK4 KUGA 1"
+        },
+        {
+          "rec_id": 3585,
+          "token": "MK5",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "V 5 MK5 + VI"
+        },
+        {
+          "rec_id": 3585,
+          "token": "MK6",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "VI 6 MK6 + FOCUS"
+        },
+        {
+          "rec_id": 3585,
+          "token": "MK1",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "+ FOCUS MK1"
+        },
+        {
+          "rec_id": 215,
+          "token": "Mk7",
+          "tag": "B-Kompatibles_Fahrzeug_Modell",
+          "status": "split_new_model",
+          "context": "IV Golf Mk7 11-17"
+        }
+      ]
+    },
+    "trim_sport_perf": {
+      "pattern_id": "trim_sport_perf",
+      "category": "engine_trim",
+      "description": "Performance / sport trim badge (e.g. GTI, AMG, RS, ST, OPC)",
+      "total_occurrences": 42,
+      "included_cont": 33,
+      "split_new_model": 4,
+      "excluded_o": 0,
+      "other_aspect": 5,
+      "inclusion_rate": 0.7857,
+      "split_rate": 0.0952,
+      "exclusion_o_rate": 0.0,
+      "other_aspect_rate": 0.119,
+      "total_model_rate": 0.881,
+      "classification": "MODERATELY_VARIABLE",
+      "top_other_aspects": {
+        "Kompatible_Fahrzeug_Marke": 4,
+        "Herstellernummer": 1
+      },
+      "sample_occurrences": [
+        {
+          "rec_id": 3807,
+          "token": "OPC",
+          "tag": "B-Herstellernummer",
+          "status": "other_aspect",
+          "context": "A 2,0 OPC X20XER X20XEV"
+        },
+        {
+          "rec_id": 4132,
+          "token": "Opc",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "1.6 Turbo Opc vorne +"
+        },
+        {
+          "rec_id": 954,
+          "token": "Gti",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "5K1 2.0 Gti"
+        },
+        {
+          "rec_id": 2809,
+          "token": "GTI",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "6N1 6N2 GTI Hinten"
+        },
+        {
+          "rec_id": 4178,
+          "token": "GTI",
+          "tag": "I-Kompatibles_Fahrzeug_Modell",
+          "status": "included_cont",
+          "context": "Polo [6N] GTI"
+        }
+      ]
+    }
+  },
+  "surface_model_statistics": {
+    "Golf": {
+      "model_name": "Golf",
+      "total_mentions": 284,
+      "single_token_rate": 0.338,
+      "multi_token_rate": 0.6549,
+      "split_next_rate": 0.2782,
+      "top_continuations": {
+        "5": 19,
+        "4": 15,
+        "6": 13,
+        "7": 13,
+        "V": 9
+      },
+      "top_split_followers": {
+        "5": 12,
+        "Passat": 8,
+        "4": 7,
+        "Polo": 6,
+        "V": 6
+      }
+    },
+    "Astra": {
+      "model_name": "Astra",
+      "total_mentions": 111,
+      "single_token_rate": 0.2523,
+      "multi_token_rate": 0.7477,
+      "split_next_rate": 0.2432,
+      "top_continuations": {
+        "J": 19,
+        "G": 12,
+        "H": 7,
+        "F": 7,
+        "G H": 2
+      },
+      "top_split_followers": {
+        "G": 11,
+        "Zafira": 3,
+        "CORSA": 2,
+        "H": 2,
+        "J": 2
+      }
+    },
+    "3er": {
+      "model_name": "3er",
+      "total_mentions": 84,
+      "single_token_rate": 0.5357,
+      "multi_token_rate": 0.4286,
+      "split_next_rate": 0.4524,
+      "top_continuations": {
+        "E46": 6,
+        "F30": 3,
+        "[E36]": 2,
+        "[E46]": 2,
+        "E30": 2
+      },
+      "top_split_followers": {
+        "E90": 10,
+        "F30": 5,
+        "E46": 5,
+        "4er": 3,
+        "[E90": 2
+      }
+    },
+    "C-Klasse": {
+      "model_name": "C-Klasse",
+      "total_mentions": 34,
+      "single_token_rate": 0.4706,
+      "multi_token_rate": 0.5,
+      "split_next_rate": 0.2647,
+      "top_continuations": {
+        "W203": 4,
+        "W204": 3,
+        "W202": 3,
+        "W204 S204": 2,
+        "W203/S203": 1
+      },
+      "top_split_followers": {
+        "W203": 3,
+        "W204": 2,
+        "E-Klasse": 2,
+        "W205": 1,
+        "T-Model": 1
+      }
+    },
+    "A4": {
+      "model_name": "A4",
+      "total_mentions": 170,
+      "single_token_rate": 0.4882,
+      "multi_token_rate": 0.5,
+      "split_next_rate": 0.3765,
+      "top_continuations": {
+        "B5": 9,
+        "B7": 5,
+        "B6/B7": 5,
+        "B8": 4,
+        "Avant": 3
+      },
+      "top_split_followers": {
+        "A6": 26,
+        "A5": 8,
+        "S4": 5,
+        "B5": 4,
+        "Avant": 3
+      }
+    },
+    "A6": {
+      "model_name": "A6",
+      "total_mentions": 122,
+      "single_token_rate": 0.582,
+      "multi_token_rate": 0.418,
+      "split_next_rate": 0.4344,
+      "top_continuations": {
+        "Avant": 5,
+        "C6": 3,
+        "C5": 3,
+        "C6 (4F2,4F5)": 2,
+        "(C6)": 2
+      },
+      "top_split_followers": {
+        "C5": 8,
+        "A8": 8,
+        "C6": 5,
+        "A7": 5,
+        "4F": 2
+      }
+    },
+    "Passat": {
+      "model_name": "Passat",
+      "total_mentions": 136,
+      "single_token_rate": 0.4559,
+      "multi_token_rate": 0.5368,
+      "split_next_rate": 0.3088,
+      "top_continuations": {
+        "3B": 8,
+        "35I": 4,
+        "3C": 3,
+        "1.6 2.0 TDI": 3,
+        "3G": 3
+      },
+      "top_split_followers": {
+        "3B": 5,
+        "Touran": 4,
+        "Polo": 3,
+        "TIGUAN": 3,
+        "Caddy": 2
+      }
+    },
+    "Polo": {
+      "model_name": "Polo",
+      "total_mentions": 113,
+      "single_token_rate": 0.4956,
+      "multi_token_rate": 0.5044,
+      "split_next_rate": 0.2124,
+      "top_continuations": {
+        "9N": 5,
+        "6N": 3,
+        "1.6": 2,
+        "1.4-1.6": 2,
+        "1.4 16V": 2
+      },
+      "top_split_followers": {
+        "LUPO": 3,
+        "9N": 2,
+        "Golf": 2,
+        "III": 1,
+        "Touran": 1
+      }
+    },
+    "Focus": {
+      "model_name": "Focus",
+      "total_mentions": 60,
+      "single_token_rate": 0.3667,
+      "multi_token_rate": 0.6333,
+      "split_next_rate": 0.2333,
+      "top_continuations": {
+        "2": 4,
+        "3": 4,
+        "C-MAX": 3,
+        "III": 3,
+        "II": 2
+      },
+      "top_split_followers": {
+        "FUSION": 2,
+        "KUGA": 1,
+        "Galaxy": 1,
+        "MK1": 1,
+        "S-MAX": 1
+      }
+    },
+    "Corsa": {
+      "model_name": "Corsa",
+      "total_mentions": 59,
+      "single_token_rate": 0.2203,
+      "multi_token_rate": 0.7797,
+      "split_next_rate": 0.2034,
+      "top_continuations": {
+        "D": 10,
+        "C": 10,
+        "A": 3,
+        "E": 3,
+        "E X15 1,3 CDTI": 2
+      },
+      "top_split_followers": {
+        "C": 3,
+        "B": 3,
+        "INSIGNIA": 2,
+        "VECTRA": 1,
+        "Meriva": 1
+      }
+    },
+    "Octavia": {
+      "model_name": "Octavia",
+      "total_mentions": 61,
+      "single_token_rate": 0.6557,
+      "multi_token_rate": 0.3279,
+      "split_next_rate": 0.2295,
+      "top_continuations": {
+        "II": 4,
+        "I": 2,
+        "3": 2,
+        "1.9TDI": 1,
+        "1U": 1
+      },
+      "top_split_followers": {
+        "Golf": 2,
+        "Fabia": 2,
+        "Superb": 2,
+        "3": 1,
+        "GOLF": 1
+      }
+    },
+    "Leon": {
+      "model_name": "Leon",
+      "total_mentions": 64,
+      "single_token_rate": 0.7344,
+      "multi_token_rate": 0.25,
+      "split_next_rate": 0.3281,
+      "top_continuations": {
+        "5F": 3,
+        "Cupra": 2,
+        "1M": 2,
+        "1M1 AQM": 1,
+        "[1M1]": 1
+      },
+      "top_split_followers": {
+        "Octavia": 3,
+        "FABIA": 2,
+        "OCTAVIA": 2,
+        "Toledo": 2,
+        "TOLEDO": 2
+      }
+    },
+    "Megane": {
+      "model_name": "Megane",
+      "total_mentions": 40,
+      "single_token_rate": 0.45,
+      "multi_token_rate": 0.525,
+      "split_next_rate": 0.325,
+      "top_continuations": {
+        "III": 3,
+        "I": 3,
+        "II": 2,
+        "III 1.6 16v 81 Kw 110 HP": 1,
+        "4 Iv": 1
+      },
+      "top_split_followers": {
+        "Scenic": 5,
+        "SCENIC": 4,
+        "Trafic": 1,
+        "Clio": 1,
+        "2": 1
+      }
+    },
+    "Clio": {
+      "model_name": "Clio",
+      "total_mentions": 41,
+      "single_token_rate": 0.439,
+      "multi_token_rate": 0.561,
+      "split_next_rate": 0.3902,
+      "top_continuations": {
+        "IV": 3,
+        "2 3 4": 2,
+        "2 II": 2,
+        "I II": 2,
+        "2": 2
+      },
+      "top_split_followers": {
+        "Megane": 4,
+        "Kangoo": 3,
+        "Modus": 2,
+        "KANGOO": 1,
+        "2": 1
+      }
+    },
+    "Fiesta": {
+      "model_name": "Fiesta",
+      "total_mentions": 41,
+      "single_token_rate": 0.2683,
+      "multi_token_rate": 0.7317,
+      "split_next_rate": 0.2195,
+      "top_continuations": {
+        "IV V": 3,
+        "V": 2,
+        "6": 2,
+        "VI": 2,
+        "5 V": 1
+      },
+      "top_split_followers": {
+        "FOCUS": 2,
+        "(JV)": 2,
+        "Focus": 1,
+        "V50": 1,
+        "Fusion": 1
+      }
+    },
+    "Trafic": {
+      "model_name": "Trafic",
+      "total_mentions": 8,
+      "single_token_rate": 0.25,
+      "multi_token_rate": 0.75,
+      "split_next_rate": 0.125,
+      "top_continuations": {
+        "III": 3,
+        "II BUS JL F9Q 762 F9Q1": 1,
+        "II V40": 1,
+        "2": 1
+      },
+      "top_split_followers": {
+        "LAGUNA": 1
+      }
+    },
+    "Vivaro": {
+      "model_name": "Vivaro",
+      "total_mentions": 13,
+      "single_token_rate": 0.4615,
+      "multi_token_rate": 0.5385,
+      "split_next_rate": 0.2308,
+      "top_continuations": {
+        "A": 2,
+        "B": 2,
+        "(J7)": 1,
+        "1.6 CDTI DIESEL MOTOR R9M": 1,
+        "2.2": 1
+      },
+      "top_split_followers": {
+        "Movano": 2,
+        "LAGUNA": 1
+      }
+    },
+    "Vito": {
+      "model_name": "Vito",
+      "total_mentions": 14,
+      "single_token_rate": 0.5,
+      "multi_token_rate": 0.2857,
+      "split_next_rate": 0.0714,
+      "top_continuations": {
+        "V Klasse [638]": 1,
+        "MIXTO": 1,
+        "[W639]": 1,
+        "Mixto A208 A209": 1
+      },
+      "top_split_followers": {
+        "VIANO": 1
+      }
+    },
+    "1er": {
+      "model_name": "1er",
+      "total_mentions": 35,
+      "single_token_rate": 0.6286,
+      "multi_token_rate": 0.3714,
+      "split_next_rate": 0.5714,
+      "top_continuations": {
+        "E81": 3,
+        "E81/E87": 2,
+        "F40": 1,
+        "[E87]": 1,
+        "E81/E87 V": 1
+      },
+      "top_split_followers": {
+        "3er": 4,
+        "E81": 4,
+        "2er": 3,
+        "F20/2er": 1,
+        "116i": 1
+      }
+    },
+    "5er": {
+      "model_name": "5er",
+      "total_mentions": 52,
+      "single_token_rate": 0.4231,
+      "multi_token_rate": 0.5,
+      "split_next_rate": 0.3654,
+      "top_continuations": {
+        "E60": 3,
+        "E39": 2,
+        "F10 LIMO 520-535i": 1,
+        "F07,": 1,
+        "E60 E61": 1
+      },
+      "top_split_followers": {
+        "E60": 4,
+        "[F10": 2,
+        "(F10)(F07)(F11)": 1,
+        "E39": 1,
+        "7ER": 1
+      }
+    },
+    "A3": {
+      "model_name": "A3",
+      "total_mentions": 152,
+      "single_token_rate": 0.7039,
+      "multi_token_rate": 0.2961,
+      "split_next_rate": 0.375,
+      "top_continuations": {
+        "8P": 8,
+        "8V": 6,
+        "8P1": 3,
+        "Sportback": 2,
+        "8L": 2
+      },
+      "top_split_followers": {
+        "A4": 24,
+        "8P1": 4,
+        "S3": 3,
+        "Leon": 3,
+        "ALTEA": 3
+      }
+    },
+    "Touran": {
+      "model_name": "Touran",
+      "total_mentions": 53,
+      "single_token_rate": 0.6038,
+      "multi_token_rate": 0.3962,
+      "split_next_rate": 0.2264,
+      "top_continuations": {
+        "5T": 4,
+        "1T": 3,
+        "1.4L-1.6L": 1,
+        "1.6/ 2.0 TDI": 1,
+        "(1T1, 1T2)": 1
+      },
+      "top_split_followers": {
+        "CADDY": 3,
+        "SCIROCCO": 1,
+        "POLO": 1,
+        "FOX": 1,
+        "5T": 1
+      }
+    }
+  },
+  "oof_error_reconciliation": {
+    "total_exact_matches": 24593,
+    "total_false_positives": 2134,
+    "total_false_negatives": 5813,
+    "current_micro_f02": 0.91531,
+    "total_boundary_errors": 1089,
+    "aspect_boundary_counts": {
+      "Kompatibles_Fahrzeug_Modell": 758,
+      "Im_Lieferumfang_Enthalten": 79,
+      "Produktart": 76,
+      "Einbauposition": 70,
+      "Herstellernummer": 44,
+      "Kompatible_Fahrzeug_Marke": 25,
+      "Hersteller": 25,
+      "Oe/Oem_Referenznummer(N)": 5,
+      "Kompatibles_Fahrzeug_Jahr": 4,
+      "Anzahl_Der_Einheiten": 1,
+      "Bremsscheiben-Aussendurchmesser": 1,
+      "Bremsscheibenart": 1
+    },
+    "subtype_counts": {
+      "shortened_end": 526,
+      "overextended_end": 459,
+      "shortened_start": 58,
+      "overextended_start": 31,
+      "both_ends_different": 15
+    },
+    "pattern_error_counts": {
+      "other_boundary": 665,
+      "engine_spec_disp": 63,
+      "gen_roman_num": 52,
+      "body_variant": 47,
+      "gen_arabic_num": 46,
+      "chassis_audi_vag": 42,
+      "chassis_bmw_e": 41,
+      "chassis_opel_letter": 38,
+      "chassis_bmw_f_g": 21,
+      "chassis_merc_w_s_c_x": 19,
+      "chassis_parens": 15,
+      "chassis_brackets": 14,
+      "chassis_mini_r": 7,
+      "engine_fuel_tech": 7,
+      "engine_valve_cyl": 5,
+      "gen_mk_prefix": 4,
+      "trim_sport_perf": 3
+    },
+    "error_classification_breakdown": {
+      "truly_inconsistent": 1030,
+      "consistent": 59,
+      "low_support": 0
+    },
+    "theoretical_ceilings": {
+      "consistent_patterns_only": {
+        "errors_resolvable": 59,
+        "projected_tp": 24652,
+        "projected_fp": 2075,
+        "projected_fn": 5754,
+        "projected_micro_f02": 0.917506,
+        "delta_f02": 0.002196
+      },
+      "all_boundary_errors": {
+        "errors_resolvable": 1089,
+        "projected_tp": 25682,
+        "projected_fp": 1045,
+        "projected_fn": 4724,
+        "projected_micro_f02": 0.95584,
+        "delta_f02": 0.040531
+      }
+    },
+    "sample_boundary_errors": [
+      {
+        "rec_id": 1382,
+        "aspect": "Im_Lieferumfang_Enthalten",
+        "gold_val": "Kurbelwelle Arretierung",
+        "pred_val": "Kurbelwelle",
+        "gold_span": [
+          4,
+          6
+        ],
+        "pred_span": [
+          4,
+          5
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "Arretierung"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 1523,
+        "aspect": "Produktart",
+        "gold_val": "Steuerkettensatz Ölpumpenantrieb",
+        "pred_val": "Steuerkettensatz",
+        "gold_span": [
+          2,
+          4
+        ],
+        "pred_span": [
+          2,
+          3
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "Ölpumpenantrieb"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 1523,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "N42 N46",
+        "pred_val": "N42",
+        "gold_span": [
+          6,
+          8
+        ],
+        "pred_span": [
+          6,
+          7
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "N46"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 4238,
+        "aspect": "Herstellernummer",
+        "gold_val": "10",
+        "pred_val": "0308 10",
+        "gold_span": [
+          6,
+          7
+        ],
+        "pred_span": [
+          5,
+          7
+        ],
+        "subtype": "overextended_start",
+        "mismatched_tokens": [
+          "0308"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 302,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "Cabrio Cooper",
+        "pred_val": "Cabrio",
+        "gold_span": [
+          10,
+          12
+        ],
+        "pred_span": [
+          10,
+          11
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "Cooper"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 1904,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "1,8 16V X18XE 2,0 16V X20XEV",
+        "pred_val": "1,8 16V X18XE",
+        "gold_span": [
+          5,
+          11
+        ],
+        "pred_span": [
+          5,
+          8
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "2,0",
+          "16V",
+          "X20XEV"
+        ],
+        "matched_pattern": "engine_valve_cyl",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 2021,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "W204 C280",
+        "pred_val": "W204",
+        "gold_span": [
+          3,
+          5
+        ],
+        "pred_span": [
+          3,
+          4
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "C280"
+        ],
+        "matched_pattern": "chassis_merc_w_s_c_x",
+        "pattern_classification": "TRULY_INCONSISTENT"
+      },
+      {
+        "rec_id": 1773,
+        "aspect": "Herstellernummer",
+        "gold_val": "VKMC",
+        "pred_val": "VKMC 03305",
+        "gold_span": [
+          1,
+          2
+        ],
+        "pred_span": [
+          1,
+          3
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "03305"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 1797,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "F30 F34 F10 F01 F15",
+        "pred_val": "F30",
+        "gold_span": [
+          6,
+          11
+        ],
+        "pred_span": [
+          6,
+          7
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "F34",
+          "F10",
+          "F01",
+          "F15"
+        ],
+        "matched_pattern": "chassis_bmw_f_g",
+        "pattern_classification": "TRULY_INCONSISTENT"
+      },
+      {
+        "rec_id": 1797,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "F25 330 530 730",
+        "pred_val": "F25",
+        "gold_span": [
+          11,
+          15
+        ],
+        "pred_span": [
+          11,
+          12
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "330",
+          "530",
+          "730"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 3717,
+        "aspect": "Herstellernummer",
+        "gold_val": "1 987 948 859",
+        "pred_val": "987 948 859",
+        "gold_span": [
+          5,
+          9
+        ],
+        "pred_span": [
+          6,
+          9
+        ],
+        "subtype": "shortened_start",
+        "mismatched_tokens": [
+          "1"
+        ],
+        "matched_pattern": "gen_arabic_num",
+        "pattern_classification": "TRULY_INCONSISTENT"
+      },
+      {
+        "rec_id": 21,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "Polo",
+        "pred_val": "Polo III",
+        "gold_span": [
+          11,
+          12
+        ],
+        "pred_span": [
+          11,
+          13
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "III"
+        ],
+        "matched_pattern": "gen_roman_num",
+        "pattern_classification": "CONSISTENT_INCLUDED"
+      },
+      {
+        "rec_id": 2481,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "C4 Picasso",
+        "pred_val": "C4",
+        "gold_span": [
+          10,
+          12
+        ],
+        "pred_span": [
+          10,
+          11
+        ],
+        "subtype": "shortened_end",
+        "mismatched_tokens": [
+          "Picasso"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 2072,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "A3",
+        "pred_val": "A3 V",
+        "gold_span": [
+          11,
+          12
+        ],
+        "pred_span": [
+          11,
+          13
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "V"
+        ],
+        "matched_pattern": "gen_roman_num",
+        "pattern_classification": "CONSISTENT_INCLUDED"
+      },
+      {
+        "rec_id": 4953,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "A4",
+        "pred_val": "A4 Avant",
+        "gold_span": [
+          2,
+          3
+        ],
+        "pred_span": [
+          2,
+          4
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "Avant"
+        ],
+        "matched_pattern": "body_variant",
+        "pattern_classification": "TRULY_INCONSISTENT"
+      },
+      {
+        "rec_id": 878,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "A6",
+        "pred_val": "A6 (4F C6)",
+        "gold_span": [
+          7,
+          8
+        ],
+        "pred_span": [
+          7,
+          10
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "(4F",
+          "C6)"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 2097,
+        "aspect": "Herstellernummer",
+        "gold_val": "VKMC 06038",
+        "pred_val": "06038",
+        "gold_span": [
+          5,
+          7
+        ],
+        "pred_span": [
+          6,
+          7
+        ],
+        "subtype": "shortened_start",
+        "mismatched_tokens": [
+          "VKMC"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 248,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "A4",
+        "pred_val": "A4 B9/8W",
+        "gold_span": [
+          7,
+          8
+        ],
+        "pred_span": [
+          7,
+          9
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "B9/8W"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 3807,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "Zafira A 2,0",
+        "pred_val": "Zafira A 2,0 OPC X20XER X20XEV",
+        "gold_span": [
+          9,
+          12
+        ],
+        "pred_span": [
+          9,
+          15
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "OPC",
+          "X20XER",
+          "X20XEV"
+        ],
+        "matched_pattern": "trim_sport_perf",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      },
+      {
+        "rec_id": 3256,
+        "aspect": "Kompatibles_Fahrzeug_Modell",
+        "gold_val": "Tiida",
+        "pred_val": "Tiida NV200",
+        "gold_span": [
+          8,
+          9
+        ],
+        "pred_span": [
+          8,
+          10
+        ],
+        "subtype": "overextended_end",
+        "mismatched_tokens": [
+          "NV200"
+        ],
+        "matched_pattern": "other_boundary",
+        "pattern_classification": "MODERATELY_VARIABLE"
+      }
+    ]
+  },
+  "out_of_sample_verification": {
+    "val_titles_evaluated": 1000,
+    "patterns_compared": 19,
+    "mean_absolute_difference": 0.0568,
+    "pearson_correlation": 0.9704,
+    "classification_match_rate": 0.8421,
+    "pattern_comparisons": [
+      {
+        "pattern_id": "separator_plus",
+        "train_occurrences": 1609,
+        "val_occurrences": 415,
+        "train_inclusion_rate": 0.0,
+        "val_inclusion_rate": 0.0,
+        "rate_absolute_difference": 0.0,
+        "classification_train": "CONSISTENT_EXCLUDED",
+        "classification_val": "CONSISTENT_EXCLUDED",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_audi_vag",
+        "train_occurrences": 321,
+        "val_occurrences": 64,
+        "train_inclusion_rate": 0.6075,
+        "val_inclusion_rate": 0.4844,
+        "rate_absolute_difference": 0.1231,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "engine_valve_cyl",
+        "train_occurrences": 99,
+        "val_occurrences": 18,
+        "train_inclusion_rate": 0.8384,
+        "val_inclusion_rate": 0.7778,
+        "rate_absolute_difference": 0.0606,
+        "classification_train": "MODERATELY_VARIABLE",
+        "classification_val": "MODERATELY_VARIABLE",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "gen_arabic_num",
+        "train_occurrences": 707,
+        "val_occurrences": 162,
+        "train_inclusion_rate": 0.4823,
+        "val_inclusion_rate": 0.4383,
+        "rate_absolute_difference": 0.044,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "gen_roman_num",
+        "train_occurrences": 584,
+        "val_occurrences": 142,
+        "train_inclusion_rate": 0.851,
+        "val_inclusion_rate": 0.8592,
+        "rate_absolute_difference": 0.0082,
+        "classification_train": "CONSISTENT_INCLUDED",
+        "classification_val": "CONSISTENT_INCLUDED",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_bmw_e",
+        "train_occurrences": 307,
+        "val_occurrences": 90,
+        "train_inclusion_rate": 0.3388,
+        "val_inclusion_rate": 0.2667,
+        "rate_absolute_difference": 0.0721,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "separator_slash",
+        "train_occurrences": 101,
+        "val_occurrences": 25,
+        "train_inclusion_rate": 0.0,
+        "val_inclusion_rate": 0.0,
+        "rate_absolute_difference": 0.0,
+        "classification_train": "CONSISTENT_EXCLUDED",
+        "classification_val": "CONSISTENT_EXCLUDED",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "engine_spec_disp",
+        "train_occurrences": 863,
+        "val_occurrences": 227,
+        "train_inclusion_rate": 0.6605,
+        "val_inclusion_rate": 0.6123,
+        "rate_absolute_difference": 0.0482,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "body_variant",
+        "train_occurrences": 215,
+        "val_occurrences": 57,
+        "train_inclusion_rate": 0.5814,
+        "val_inclusion_rate": 0.5088,
+        "rate_absolute_difference": 0.0726,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_parens",
+        "train_occurrences": 307,
+        "val_occurrences": 93,
+        "train_inclusion_rate": 0.5244,
+        "val_inclusion_rate": 0.5161,
+        "rate_absolute_difference": 0.0083,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "engine_fuel_tech",
+        "train_occurrences": 299,
+        "val_occurrences": 62,
+        "train_inclusion_rate": 0.9498,
+        "val_inclusion_rate": 0.9194,
+        "rate_absolute_difference": 0.0304,
+        "classification_train": "CONSISTENT_INCLUDED",
+        "classification_val": "CONSISTENT_INCLUDED",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "drivetrain",
+        "train_occurrences": 37,
+        "val_occurrences": 7,
+        "train_inclusion_rate": 0.8108,
+        "val_inclusion_rate": 0.7143,
+        "rate_absolute_difference": 0.0965,
+        "classification_train": "MODERATELY_VARIABLE",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": false
+      },
+      {
+        "pattern_id": "chassis_mini_r",
+        "train_occurrences": 68,
+        "val_occurrences": 20,
+        "train_inclusion_rate": 0.3088,
+        "val_inclusion_rate": 0.35,
+        "rate_absolute_difference": 0.0412,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_merc_w_s_c_x",
+        "train_occurrences": 220,
+        "val_occurrences": 49,
+        "train_inclusion_rate": 0.3591,
+        "val_inclusion_rate": 0.5102,
+        "rate_absolute_difference": 0.1511,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_opel_letter",
+        "train_occurrences": 218,
+        "val_occurrences": 84,
+        "train_inclusion_rate": 0.844,
+        "val_inclusion_rate": 0.869,
+        "rate_absolute_difference": 0.025,
+        "classification_train": "MODERATELY_VARIABLE",
+        "classification_val": "CONSISTENT_INCLUDED",
+        "classifications_match": false
+      },
+      {
+        "pattern_id": "chassis_bmw_f_g",
+        "train_occurrences": 189,
+        "val_occurrences": 56,
+        "train_inclusion_rate": 0.2963,
+        "val_inclusion_rate": 0.3571,
+        "rate_absolute_difference": 0.0608,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "TRULY_INCONSISTENT",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "chassis_brackets",
+        "train_occurrences": 91,
+        "val_occurrences": 20,
+        "train_inclusion_rate": 0.8462,
+        "val_inclusion_rate": 0.8,
+        "rate_absolute_difference": 0.0462,
+        "classification_train": "MODERATELY_VARIABLE",
+        "classification_val": "MODERATELY_VARIABLE",
+        "classifications_match": true
+      },
+      {
+        "pattern_id": "gen_mk_prefix",
+        "train_occurrences": 22,
+        "val_occurrences": 5,
+        "train_inclusion_rate": 0.7273,
+        "val_inclusion_rate": 0.8,
+        "rate_absolute_difference": 0.0727,
+        "classification_train": "TRULY_INCONSISTENT",
+        "classification_val": "MODERATELY_VARIABLE",
+        "classifications_match": false
+      },
+      {
+        "pattern_id": "trim_sport_perf",
+        "train_occurrences": 42,
+        "val_occurrences": 12,
+        "train_inclusion_rate": 0.7857,
+        "val_inclusion_rate": 0.6667,
+        "rate_absolute_difference": 0.119,
+        "classification_train": "MODERATELY_VARIABLE",
+        "classification_val": "MODERATELY_VARIABLE",
+        "classifications_match": true
+      }
+    ]
+  },
+  "decision_verdict": {
+    "verdict": "ANNOTATIONS TOO AMBIGUOUS — RETAIN PHASE 40",
+    "rationale": "Over 94.6% of observed boundary errors stem from truly inconsistent, arbitrary annotation conventions (e.g. chassis codes like 8V, W204, B9 and generation numerals like 4, 7 being arbitrarily merged vs split into separate entities with ~50% inclusion rate). Under precision-heavy F0.2 (beta=0.2), any deterministic rule or neural span prior attempting to resolve these coin-flip boundaries incurs catastrophic false-positive penalties (1 FP destroys 25 TPs), as empirically confirmed in Phase 50 (+313 FPs, -0.035 F0.2 regression). The frozen Phase 40 champion represents the optimal precision-calibrated consensus.",
+    "inconsistent_fraction": 0.9458,
+    "consistent_fraction": 0.0542
+  }
+}
